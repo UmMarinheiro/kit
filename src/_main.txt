@@ -1,0 +1,178 @@
+#include <iostream>
+#include <vector>
+#include <math.h>
+#include <cstdlib>
+#include "Data.h"
+
+using namespace std;
+
+std::vector<std::vector<float>> matrizAdj; 
+size_t n;
+
+typedef struct Solucao
+{
+    std::vector<int> sequencia;
+    double valorObj;
+} Solucao;
+
+typedef struct InsertionInfo
+{
+    int noInserido;
+    int arestaRemovida;
+    double custo;
+} InsertionInfo;
+
+void exibirSolucao (Solucao *s)
+{
+    for(int i = 0; i < s->sequencia.size() - 1; i++)
+    {
+        if(s->sequencia[i]<100)
+        {
+            std::cout << " ";
+            if(s->sequencia[i]<10) std::cout << " ";
+        }
+        
+        std::cout << s->sequencia[i] << " -> ";
+    }
+    std::cout << s->sequencia.back() << std::endl;
+}
+
+void calcularValorObj(Solucao *s, double **matrizAdj)
+{
+    for(int i = 0; i < s->sequencia.size() - 1; i++)
+    {
+        s->valorObj += matrizAdj[s->sequencia[i]][s->sequencia[i+1]];
+    }        
+}
+Solucao solucaoCrescente()
+{
+    Solucao s = {{}, 0.0};
+
+    for(int i = 1; i < n; i++)
+        s->sequencia.push_back(i);
+    s->sequencia.push_back(1);
+
+    return s;
+}
+
+std::vector<InsertionInfo> calcularCustoInsercao(Solucao& s, std::vector<InsertionInfo>& CL)
+{
+    std::vector<InsertionInfo> custoInsercao = 
+        std::vector<InsertionInfo>((s.size() - 1) * CL.size());
+    int l = 0;
+    for(int a = 0; a < s.sequencia.size - 1; a++)
+    {
+        int i = s.sequencia[a];
+        int j = s.sequencia[a+1];
+        for(auto k : CL) 
+        {
+            custoInsercao[l].custo = c[i][k] + c[j][k] = c[i][j];
+            custoInsercao[l].noInserido = k;
+            custoInsercao[l].arestaRemovida = a;
+            l++;
+        }
+    }
+    return custoInsercao;
+}
+
+vector<int> escolher3NosAleatorios(std::vector<int> & nosRestantes = NULL)
+{
+    vector<int> chosen = 
+    {
+        rand() % (n);
+        rand() % (n-1);
+        rand() % (n-2);
+    };
+    
+    if(nosrestantes != NULL)
+    {
+        nosRestantes.resize(n);
+        iota(nosRestantes.begin(), 
+            nosRestantes.end(),0);
+        for(int i = 0; i < 3; i++)
+            nosRestantes.erase(i);
+    }
+
+    if(chosen[1]>=chosen[0]) chosen[1]++;
+
+    if(chosen[2]>=chosen[0]) chosen[2]++;
+    if(chosen[2]>=chosen[1]) chosen[2]++;
+    
+    return chosen;
+}
+void ordenarEmOrdemCrescente(vector<InsertionInfo> & custoInsercao)
+{
+    sort(0, custoInsercao.size()-1, 
+        [](InsertionInfo a, InsertionInfo b)
+        {return a.custo < b.custo;});
+}
+void inserirNaSolucao(Solution & s, const int & noInserido)
+{
+
+}
+  
+
+Solucao Construcao()
+{
+    Solution s;
+    std::vector<int> CL;
+    s.sequencia = escolher3NosAleatorios(CL);
+
+    while(!CL.empty())
+    {
+        std::vector<InsertionInfo> insertions = 
+            calcularCustoInsercao(s, CL);
+        
+        ordenarEmOrdemCrescente(insertions); 
+
+        double alpha = (double) rand() / RAND_MAX;
+        int selected = rand() % ((int)ceil(alpha * insertions.size()));
+        inserirNaSolucao(s, insertions[selected].noInserido);
+    }
+
+    return s;
+}
+
+Solucao ILS(int maxIter, int maxIterIls)
+{
+    Solucao bestOfAll;
+    bestOfAll.valorObj = INFINITY;
+    for(int i = 0; i < maxInter; i++)
+    {
+        Solution s = Construcao();
+        Solution best = s;
+
+        int = interIls = 0;
+
+        while(interILs <= maxInterIls)
+        {
+            BuscaLocal(&s);
+            if(s.valorObj < best.valorObj)
+            {
+                best = s;
+                interIls = 0;
+            }
+            s = Pertubacao(best);
+            interIls++;
+        }
+        if (best.valorObj < bestOfAll.valorObj)
+            bestOfAll = best;
+    }
+    return bestOfAll;
+}
+int main(int argc, char** argv) 
+{
+    Data data = Data(argc, argv[1]);
+    data.read();
+    n = data.getDimension();
+
+    Solucao s = solucaoCrescente();
+    
+    calcularValorObj(&s,data.getMatrixCost());
+
+    cout << "Solucao S = " << std::endl;
+    exibirSolucao(&s);
+    cout << "Custo de S: " << s.valorObj << std::endl;
+
+    return 0;
+}
