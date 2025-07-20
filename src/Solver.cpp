@@ -18,7 +18,7 @@ void Solver::updateCost(Solution &s)
     s.cost = 0;
     for(int i = 0; i < s.sequence.size() - 1; i++)
     {
-        s.cost += getCost(s.sequence[i], s.sequence[i+1]);
+        s.cost += s.cost + getCost(s.sequence[i], s.sequence[i+1]);
     }
 }
 vector<int> Solver::getUnusedNodes(const vector<int> & used)
