@@ -1,8 +1,67 @@
 #include "ILSSolver.h"
 
+#include "Solution.h"
 #include "Solver.h"
+#include <cstdio>
+#include <iostream>
 #include <vector>
 #include <algorithm>
+
+#include <cfloat>
+
+Subsequence BuildedSolution::getSubsequence(int startingNode, int endingNode) const {return subseq_matrix[startingNode-FIRST_NODE][endingNode-FIRST_NODE];}
+
+inline Subsequence ILSSolver::Concatenate(Subsequence s1, Subsequence s2)
+{
+    Subsequence s;
+    double temp = getCost(s1.last, s2.first);
+    s.W = s1.W + s2.W;
+    s.T = s1.T + temp + s2.T;
+    s.C = s1.C + s2.W*(s1.T + temp) + s2.C;
+    s.first = s1.first;
+    s.last = s2.last;
+
+    return  s;
+}
+void ILSSolver::UpdateAllSubseq(BuildedSolution &b)
+{
+    int n = b.solution.sequence.size();
+    b.subseq_matrix = vector<vector<Subsequence>>(n, vector<Subsequence>(n));
+
+    for(int i = 0; i < n; i++)
+    {
+        b.subseq_matrix[i][i].W = (i>0);
+        b.subseq_matrix[i][i].C = 0;
+        b.subseq_matrix[i][i].T = 0;
+
+        b.subseq_matrix[i][i].first = b.solution.sequence[i];
+        b.subseq_matrix[i][i].last = b.solution.sequence[i];
+    }
+
+    for(int i = 0; i < n; i++)
+        for(int j = i+1; j < n; j++)
+            b.subseq_matrix[i][j] = Concatenate(b.subseq_matrix[i][j-1],b.subseq_matrix[j][j]);
+
+    for(int i = n-1; i >= 0; i--)
+        for(int j = i-1; j >=0; j--)
+            b.subseq_matrix[i][j] = Concatenate(b.subseq_matrix[i][j+1],b.subseq_matrix[j][j]);
+
+    for(int i = 0; i < n; i++)
+    {
+        for(int j = 0; j < n; j++)
+            std::cout << b.subseq_matrix[i][j].C << " ";
+        std::cout<<"\n";
+    }
+    updateCost(b.solution);
+    double cost = 0;
+    std::cout<<"\n\n\n";
+    for(int i = 0; i < dimension-1; i++)
+    {
+        std::cout<<cost<<" "<<b.getSubsequence(1, i+1).C<<"\n";
+        cost += cost + getCost(b.solution.sequence[i], b.solution.sequence[i+1]);
+    }
+    getchar();
+}
 
 ILSSolver::ILSSolver(Data *_data, int maxIter, int maxIterIls) : Solver(_data)
 {
@@ -10,30 +69,40 @@ ILSSolver::ILSSolver(Data *_data, int maxIter, int maxIterIls) : Solver(_data)
     
     for(int i = 0; i < maxIter; i++)
     {
-        Solution s = Construct();
+        std::cout<<"Starting construction\n";
+        BuildedSolution s = Construct();
+        std::cout<<"Concluded construction\n";
 
-        Solution best = s;
+        BuildedSolution best = s;
 
         int iterIls = 0;
 
         while(iterIls <= maxIterIls)
         {
+
+            std::cout<<"Starting LS\n";
             LocalSearch(&s);
+            std::cout<<"Concluded LS\n";
             
-            if(s.cost < best.cost)
+            if(s.solution.cost < best.solution.cost)
             {
                 best = s;
                 iterIls = 0;
             }
 
-            for(int i = 0; i < 50; i++) s = Pertubation(best);
+            std::cout<<"Starting Pertubation\n";
+            s = Pertubation(best);
+            std::cout<<"Concluded Pertubation\n";
             
             iterIls++;
         }
-        if (best.cost < bestOfAll.cost)
-            bestOfAll = best;
+        if (best.solution.cost < bestOfAll.cost)
+            bestOfAll = best.solution;
     }
     solution = bestOfAll;
+    solution.print((char*)"Antes");
+    updateCost(solution);
+    solution.print((char*)"Depois");
 }
 vector<int> ILSSolver::choseFromInterval(int n, int first, int size)
 {
@@ -110,13 +179,13 @@ int ILSSolver::lowerBiasedRand(int max)
     return rand() % ((int)ceil(alpha * max));
 }
 
-Solution ILSSolver::Construct()
+BuildedSolution ILSSolver::Construct()
 {
-    Solution s = Solution();
+    BuildedSolution b = BuildedSolution();
+    Solution & s = b.solution;
     
     s.sequence = choseRandom3NodeSequence();
     
-    updateCost(s);
     std::vector<int> CL = getUnusedNodes(s.sequence);
     
     while(!CL.empty())
@@ -136,12 +205,16 @@ Solution ILSSolver::Construct()
         CL = getUnusedNodes(s.sequence);
     }
 
-    return s;
+    UpdateAllSubseq(b);
+    s.cost = b.getSubsequence(1, dimension).C;
+    return b;
 }
 
-bool ILSSolver::bestImprovementSwap(Solution *s)
+bool ILSSolver::bestImprovementSwap(BuildedSolution *b)
 {
-    double bestDelta = 0;
+    std::cout<<"Starting SWAP\n";
+    Solution *s = &(b->solution);
+    double bestCost = DBL_MAX;
     int best_i, best_j;
 
     for(int i = 1; i < s->sequence.size() - 1; i++)
@@ -150,49 +223,45 @@ bool ILSSolver::bestImprovementSwap(Solution *s)
         int vi_predecessor = s->sequence[i-1];
         int vi_succesor = s->sequence[i+1];
 
-        for(int j = i+1; j < s->sequence.size() - 1; j++)
+        for(int j = i+2; j < s->sequence.size() - 1; j++)
         {
             int vj = s->sequence[j];
             int vj_predecessor = s->sequence[j-1];
             int vj_succesor = s->sequence[j+1];
 
-            double delta = 
-                -getCost(vi_predecessor, vi)
-                -getCost(vi, vi_succesor) 
-                +getCost(vi_predecessor, vj)
-                +getCost(vj, vi_succesor)
-                
-                -getCost(vj_predecessor, vj)
-                -getCost(vj, vj_succesor)
-                +getCost(vj_predecessor, vi)
-                +getCost(vi, vj_succesor);
-
-            if(vi == vj_predecessor) 
-                delta -= 
-                    -getCost(vi, vi_succesor)
-                    -getCost(vj_predecessor, vj);
-
-            if(delta < bestDelta)
+            Subsequence sb = b->getSubsequence(1, vi_predecessor);
+            sb = Concatenate(sb, b->getSubsequence(vj, vj));
+            sb = Concatenate(sb, b->getSubsequence(vi_succesor, vj_predecessor));
+            sb = Concatenate(sb, b->getSubsequence(vi, vi));
+            sb = Concatenate(sb, b->getSubsequence(vj_succesor, dimension));
+            
+            if(sb.C < b->solution.cost)
             {
-                bestDelta = delta;
+                bestCost = sb.C;
                 best_i = i;
                 best_j = j;
             }
         }
     }
+    std::cout<<"Ended SWAP\n";
     
-    if(bestDelta < 0) 
+    if(bestCost < b->solution.cost) 
     {
         std::swap(s->sequence[best_i], s->sequence[best_j]);
-        s->cost = s->cost + bestDelta;
+        s->cost = bestCost;
+
+        cout<<"Trocando "<<s->sequence[best_i] << " e " << s->sequence[best_j]<<"\n";
+        UpdateAllSubseq(*b);
 
         return  true;
     }
     else return false;
 }
-bool ILSSolver::bestImprovement2Opt(Solution *s)
+bool ILSSolver::bestImprovement2Opt(BuildedSolution *b)
 {
-    double bestDelta = 0;
+    std::cout<<"Starting 2Opt\n";
+    Solution *s = &(b->solution);
+    double bestCost = DBL_MAX;
     int best_i, best_j;
 
     for(int i = 0; i < s->sequence.size()-1; i++)
@@ -205,37 +274,39 @@ bool ILSSolver::bestImprovement2Opt(Solution *s)
             int ej_start = s->sequence[j];
             int ej_end = s->sequence[j+1];
 
-            double delta = 
-                -getCost(ei_start, ei_end)
-                -getCost(ej_start, ej_end)
-                
-                +getCost(ei_start, ej_start)
-                +getCost(ei_end, ej_end);
-
-            if(delta < bestDelta)
+            Subsequence sb = b->getSubsequence(1, ei_start);
+            sb = Concatenate(sb, b->getSubsequence(ej_start, ei_end));
+            sb = Concatenate(sb, b->getSubsequence(ei_end, dimension));
+            
+            if(sb.C < bestCost)
             {
-                bestDelta = delta;
+                bestCost = sb.C;
                 best_i = i;
                 best_j = j;
             }
         }
     }
 
-    if(bestDelta < 0) 
+    std::cout<<"Ended 2OPt\n";
+
+    if(bestCost < 0) 
     {
         for(int i = best_i+1, j = best_j; i < j; i++, j--)
         {
             std::swap(s->sequence[i],s->sequence[j]);
         }
-        s->cost = s->cost + bestDelta;
-
+        s->cost = bestCost;
+        cout<<"Invertendo de "<<s->sequence[best_i+1] << " a " << s->sequence[best_j] <<"\n";
+        UpdateAllSubseq(*b);
+        
         return true;
     }
     else return false;
 }
-bool ILSSolver::bestImprovementOrOpt(Solution *s, int nVertex)
+bool ILSSolver::bestImprovementOrOpt(BuildedSolution *b, int nVertex)
 {
-    double bestDelta = 0;
+    Solution *s = &(b->solution);
+    double bestCost = 0;
     int best_block, best_edge;
 
     for(int block_start_index = 1; block_start_index < s->sequence.size()-1 - (nVertex-1); block_start_index++)
@@ -252,27 +323,31 @@ bool ILSSolver::bestImprovementOrOpt(Solution *s, int nVertex)
             int edge_start = s->sequence[edge_start_index];
             int edge_end = s->sequence[edge_start_index+1];
 
-            double delta = 
-                -getCost(block_predecessor, block_start) 
-                -getCost(block_end, block_succesor)
-                
-                +getCost(block_predecessor, block_succesor)
-                -getCost(edge_start, edge_end)
-                
-                +getCost(edge_start, block_start)
-                +getCost(block_end, edge_end);
-
-
-            if(delta < bestDelta)
+            Subsequence sb;
+            if(j >= block_start_index-1)
             {
-                bestDelta = delta;
+                sb = b->getSubsequence(1, block_predecessor);
+                sb = Concatenate(sb, b->getSubsequence(block_succesor, edge_start));
+                sb = Concatenate(sb, b->getSubsequence(block_start, block_end));
+                sb = Concatenate(sb, b->getSubsequence(edge_end, dimension));
+            }
+            else 
+            {
+                sb = b->getSubsequence(1, edge_start);
+                sb = Concatenate(sb, b->getSubsequence(block_start, block_end));
+                sb = Concatenate(sb, b->getSubsequence(edge_end, block_start));
+                sb = Concatenate(sb, b->getSubsequence(block_end, dimension));
+            }
+            if(sb.C < bestCost)
+            {
+                bestCost = sb.C;
                 best_block = block_start_index;
                 best_edge = edge_start_index;
             }
         }
     }
 
-    if(bestDelta < 0) 
+    if(bestCost < 0) 
     {
         for(int i = 0; i < nVertex;i++)
         {       
@@ -281,15 +356,17 @@ bool ILSSolver::bestImprovementOrOpt(Solution *s, int nVertex)
             s->sequence.erase(s->sequence.begin() + best_block + 
                 (1+i)*(best_edge<best_block));
         }
-        s->cost = s->cost + bestDelta;
+        s->cost = bestCost;
+        cout<<"Movendo de "<<s->sequence[best_block] << " a " << s->sequence[best_block + nVertex - 1] << " para depois de " << s->sequence[best_edge] <<"\n";
+        UpdateAllSubseq(*b);
 
         return  true;
     }
     else return false;
 }
-void ILSSolver::LocalSearch(Solution *s)
+void ILSSolver::LocalSearch(BuildedSolution *b)
 {
-    std::vector<int> NL = {1, 2, 3, 4,5};
+    std::vector<int> NL = {1, 2, 3, 4, 5};
     bool improved = false;
 
     while(!NL.empty())
@@ -299,19 +376,19 @@ void ILSSolver::LocalSearch(Solution *s)
         switch (NL[n]) 
         {
         case 1:
-            improved = bestImprovementSwap(s);
+            improved = bestImprovementSwap(b);
             break;
         case 2:
-            improved = bestImprovement2Opt(s);
+            improved = bestImprovement2Opt(b);
             break;
         case 3:
-            improved = bestImprovementOrOpt(s,1);
+            improved = bestImprovementOrOpt(b,1);
             break;
         case 4:
-            improved = bestImprovementOrOpt(s,2);
+            improved = bestImprovementOrOpt(b,2);
             break;
         case 5:
-            improved = bestImprovementOrOpt(s,3);
+            improved = bestImprovementOrOpt(b,3);
             break;
         }
 
@@ -322,11 +399,16 @@ void ILSSolver::LocalSearch(Solution *s)
         else NL.erase(NL.begin() + n);
     }
 } 
-Solution ILSSolver::Pertubation(const Solution &s)
+BuildedSolution ILSSolver::Pertubation(const BuildedSolution &b)
 {
+    const Solution &s = b.solution;
     vector<int> delimiters = choseFromInterval(4, 1, s.sequence.size()-1);
 
-    Solution sr;
+    for(int i = 0; i < delimiters.size(); i++) cout<<delimiters[i] <<" ";
+    cout<<"\n";
+
+    BuildedSolution br;
+    Solution &sr = br.solution;
 
     for(int i = 0; i < delimiters[0]; i++) sr.sequence.push_back(s.sequence.at(i));
     for(int i = delimiters[2]; i < delimiters[3]; i++) sr.sequence.push_back(s.sequence.at(i));
@@ -334,18 +416,14 @@ Solution ILSSolver::Pertubation(const Solution &s)
     for(int i = delimiters[0]; i < delimiters[1]; i++) sr.sequence.push_back(s.sequence.at(i));
     for(int i = delimiters[3]; i < s.sequence.size(); i++) sr.sequence.push_back(s.sequence.at(i));
     
-    double delta = 
-        -getCost(s.sequence[delimiters[0]-1], s.sequence[delimiters[0]])
-        -getCost(s.sequence[delimiters[1]-1], s.sequence[delimiters[1]])
-        +getCost(s.sequence[delimiters[2]-1], s.sequence[delimiters[0]])
-        +getCost(s.sequence[delimiters[1]-1], s.sequence[delimiters[3]])
-        
-        -getCost(s.sequence[delimiters[2]-1], s.sequence[delimiters[2]])
-        -getCost(s.sequence[delimiters[3]-1], s.sequence[delimiters[3]])
-        +getCost(s.sequence[delimiters[0]-1], s.sequence[delimiters[2]])
-        +getCost(s.sequence[delimiters[3]-1], s.sequence[delimiters[1]]);
+    Subsequence sb = b.getSubsequence(1,(delimiters[0]-1 > 1? delimiters[0]-1 : 1));
+    sb = Concatenate(sb, b.getSubsequence(delimiters[2],delimiters[3]-1));
+    sb = Concatenate(sb, b.getSubsequence(delimiters[1],delimiters[2]-1));
+    sb = Concatenate(sb, b.getSubsequence(delimiters[0],delimiters[1]-1));
+    sb = Concatenate(sb, b.getSubsequence(delimiters[3],dimension));
 
-    sr.cost = s.cost + delta;
+    sr.cost = sb.C;
+    UpdateAllSubseq(br);
 
-    return sr;
+    return br;
 }
