@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include <ctime>
-#include <type_traits>
 #include <vector>
 #include <algorithm>
 #include "Data.h"
@@ -249,7 +248,6 @@ bool bestImprovement2Opt(Solution *s)
 
     if(bestDelta < 0) 
     {
-        cout<<best_i<<" "<<best_j<<endl;
         reverse(s->sequence.begin() + best_i + 1, s->sequence.begin() + best_j + 1);
         s->cost = s->cost + bestDelta;
 
@@ -350,8 +348,34 @@ void LocalSearch(Solution *s)
         else NL.erase(NL.begin() + n);
     }
 } 
+Solution Pertubation(const Solution &s)
+{
+    vector<int> delimiters = choseFromInterval(4, 1, SIZE);
+    
+    Solution sr = {{}, 0};
+    sr.sequence.insert(sr.sequence.end(), s.sequence.begin(), s.sequence.begin() + delimiters[0]);
+    sr.sequence.insert(sr.sequence.end(), s.sequence.begin() + delimiters[2], s.sequence.begin() + delimiters[3]);
+    sr.sequence.insert(sr.sequence.end(), s.sequence.begin() + delimiters[1], s.sequence.begin() + delimiters[2]);
+    sr.sequence.insert(sr.sequence.end(), s.sequence.begin() + delimiters[0], s.sequence.begin() + delimiters[1]);
+    sr.sequence.insert(sr.sequence.end(), s.sequence.begin() + delimiters[3], s.sequence.end());
+    
+    double delta = 
+        -dt->getDistance(s.sequence[delimiters[0]-1], s.sequence[delimiters[0]])
+        -dt->getDistance(s.sequence[delimiters[1]-1], s.sequence[delimiters[1]])
+        +dt->getDistance(s.sequence[delimiters[2]-1], s.sequence[delimiters[0]])
+        +dt->getDistance(s.sequence[delimiters[1]-1], s.sequence[delimiters[3]])
+        
+        -dt->getDistance(s.sequence[delimiters[2]-1], s.sequence[delimiters[2]])
+        -dt->getDistance(s.sequence[delimiters[3]-1], s.sequence[delimiters[3]])
+        +dt->getDistance(s.sequence[delimiters[0]-1], s.sequence[delimiters[2]])
+        +dt->getDistance(s.sequence[delimiters[3]-1], s.sequence[delimiters[1]]);
 
-/*Solution ILS(int maxIter, int maxIterIls)
+    sr.cost = s.cost + delta;
+
+    return sr;
+}
+
+Solution ILS(int maxIter, int maxIterIls)
 {
     Solution bestOfAll = Solution{{},INFINITY};
     
@@ -381,17 +405,17 @@ void LocalSearch(Solution *s)
             bestOfAll = best;
     }
     return bestOfAll;
-}*/
+}
 
 int main(int argc, char** argv) 
 {
     srand(time(NULL));
+
     initializeData(argv[1]);
 
     cout << "Begining ILS" << endl;
     clock_t before = clock();
-    Solution s = Construct();//ILS(50, SIZE/(1 + (SIZE>=150)));
-    LocalSearch(&s);
+    Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
     float duration = (clock()-before);
     s.print("ILS Solution");
     cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
