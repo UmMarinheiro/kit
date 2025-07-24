@@ -1,7 +1,10 @@
+#include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <iostream>
 
 #include <ctime>
+#include <ostream>
 #include <vector>
 #include <algorithm>
 #include "Data.h"
@@ -35,10 +38,34 @@ typedef struct Solution
 }Solution;
 void updateCost(Solution &toUpdate)
 {
+    double duration = 0;
     toUpdate.cost = 0;
-    for(int i = 0; i < toUpdate.sequence.size()-1; i++) 
-        toUpdate.cost += dt->getDistance(toUpdate.sequence[i], toUpdate.sequence[i+1]);
+    
+    for(int i = 0; i < toUpdate.sequence.size()-1; i++)
+    {
+        duration += dt->getDistance(toUpdate.sequence[i], toUpdate.sequence[i+1]);
+        toUpdate.cost += duration;
+    }
 }
+
+typedef struct Subsequence
+{
+    double t,c;
+    int w;
+    int first, last;
+    inline static Subsequence Concatenate(Subsequence &s1, Subsequence &s2)
+    {
+        Subsequence s;
+        double temp = dt->getDistance(s1.last, s2.first);
+        s.w = s1.w + s2.w;
+        s.t = s1.t + temp + s2.t;
+        s.c = s1.c + s2.w * (s1.t + temp) + s2.c;
+        s.first = s1.first; 
+        s.last = s2.last;
+
+        return s;
+    }
+} Subsequence;
 
 typedef struct InsertionInfo
 {
@@ -67,109 +94,57 @@ vector<int> choseFromInterval(int n, int first, int limit)
     }
     return chosen;
 }
-vector<int> choseRandom3NodeSequence()
+void UpdateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
-    vector<int> chosen = {1};
-    vector<int> sorted3 = choseFromInterval(3, 2, SIZE);
+    int n = s->sequence.size();
 
-    int i = rand()%3;
-    chosen.push_back(sorted3[i]);
-    sorted3.erase(sorted3.begin() + i);
-
-    i = rand()%2;
-    chosen.push_back(sorted3[i]);
-    chosen.push_back(sorted3[!i]);
-
-    chosen.push_back(1);
-    
-    return chosen;
-}
-vector<int> getUnusedNodes(const vector<int> & used)
-{
-    vector<int> unused;
-    
-    for(int i = 1; i < SIZE + 1; i++)
+    for(int i = 0; i < n; i ++)
     {
-        bool isUsed = false;
-        for(int node : used)
-        {
-            if(i == node) 
-            {
-                isUsed = true;
-                break;
-            }   
-        }
-        if(!isUsed) unused.push_back(i);
+        int v = s->sequence[i];
+        subseq_matrix[i][i].w = (i > 0);
+        subseq_matrix[i][i].t = 0;
+        subseq_matrix[i][i].c = 0;
+        subseq_matrix[i][i].first = s->sequence[i];
+        subseq_matrix[i][i].last = s->sequence[i];
     }
 
-    return unused;
-}
-vector<InsertionInfo> calculatePossibleInsertions
-    (const vector<int> & sequence, const vector<int> & inserting)
-{
-    std::vector<InsertionInfo> insertions = 
-        std::vector<InsertionInfo>((sequence.size() - 1) * inserting.size());
-        
-    int count = 0;
-    for(int a = 0; a < sequence.size() - 1; a++)
-    {
-        int predecessor = sequence[a];
-        int successor = sequence[a+1];
-        for(int inserted : inserting) 
-        {
-            insertions[count].cost = 
-                - dt->getDistance(predecessor, successor)
-                + dt->getDistance(predecessor, inserted)
-                + dt->getDistance(inserted, successor);
+    for(int i = 0; i < n; i++)
+        for(int j = i+1; j < n; j++)
+            subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j-1], subseq_matrix[j][j]);
 
-            insertions[count].insertedNode = inserted;
-            insertions[count].removedEdge = a;
-            count++;
-        }
-    }
-    return insertions;
-}
-void sortInsertions(vector<InsertionInfo> &insertions)
-{
-    sort(insertions.begin(), insertions.end(),
-        [](InsertionInfo a, InsertionInfo b){return a.cost < b.cost;});
-}
-int lowerBiasedRand(int max)
-{
-    double alpha = (double) rand() / RAND_MAX;
-    return rand() % ((int)ceil(alpha * max));
+    for(int i = n-1; i >= 0; i--)
+        for(int j = i-1; j >= 0; j--)
+            subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
 }
 
 Solution Construct()
 {
+    double alpha = 0.01f * (rand()%26);
     Solution s = Solution();
-    
-    s.sequence = choseRandom3NodeSequence();
-    
-    updateCost(s);
-    std::vector<int> CL = getUnusedNodes(s.sequence);
-    
-    while(!CL.empty())
+
+    s.sequence = {1};
+
+    vector<int> cl;
+    for(int i = 2; i <= SIZE; i++) cl.push_back(i);
+    int r = 1;
+
+    while(!cl.empty())
     {
-        std::vector<InsertionInfo> insertions = 
-            calculatePossibleInsertions(s.sequence, CL);
+        sort(cl.begin(), cl.end(),
+        [r](int a, int b){return dt->getDistance(r, a) < dt->getDistance(r, b);});
 
-        sortInsertions(insertions); 
+        int limitOfBest = ceil(alpha * cl.size());
+        int c = cl[limitOfBest>0?rand()%limitOfBest : 0];
         
-        int selected = lowerBiasedRand(insertions.size());
-
-        s.sequence.insert(
-            s.sequence.begin() + insertions[selected].removedEdge + 1,
-            insertions[selected].insertedNode);
-        s.cost += insertions[selected].cost;
-
-        CL = getUnusedNodes(s.sequence);
+        s.sequence.push_back(c);
+        r = c;
+        cl.erase(find(cl.begin(),cl.end(),c));
     }
-
+    s.sequence.push_back(1);
     return s;
 }
 
-bool bestImprovementSwap(Solution *s)
+bool bestImprovementSwap(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     double bestDelta = 0;
     int best_i, best_j;
@@ -215,7 +190,7 @@ bool bestImprovementSwap(Solution *s)
     }
     else return false;
 }
-bool bestImprovement2Opt(Solution *s)
+bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     double bestDelta = 0;
     int best_i, best_j;
@@ -255,7 +230,7 @@ bool bestImprovement2Opt(Solution *s)
     }
     else return false;
 }
-bool bestImprovementOrOpt(Solution *s, int nVertex)
+bool bestImprovementOrOpt(Solution *s, int nVertex, vector<vector<Subsequence>> &subseq_matrix)
 {
     double bestDelta = 0;
     int best_block, best_edge;
@@ -313,7 +288,7 @@ bool bestImprovementOrOpt(Solution *s, int nVertex)
     else return false;
 }
 
-void LocalSearch(Solution *s)
+void LocalSearch(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     std::vector<int> NL = {1, 2, 3, 4, 5};
     bool improved = false;
@@ -325,19 +300,19 @@ void LocalSearch(Solution *s)
         switch (NL[n]) 
         {
         case 1:
-            improved = bestImprovementSwap(s);
+            improved = bestImprovementSwap(s, subseq_matrix);
             break;
         case 2:
-            improved = bestImprovement2Opt(s);
+            improved = bestImprovement2Opt(s, subseq_matrix);
             break;
         case 3:
-            improved = bestImprovementOrOpt(s,1);
+            improved = bestImprovementOrOpt(s,1,subseq_matrix);
             break;
         case 4:
-            improved = bestImprovementOrOpt(s,2);
+            improved = bestImprovementOrOpt(s,2,subseq_matrix);
             break;
         case 5:
-            improved = bestImprovementOrOpt(s,3);
+            improved = bestImprovementOrOpt(s,3,subseq_matrix);
             break;
         }
 
@@ -348,7 +323,7 @@ void LocalSearch(Solution *s)
         else NL.erase(NL.begin() + n);
     }
 } 
-Solution Pertubation(const Solution &s)
+Solution Pertubation(const Solution &s, vector<vector<Subsequence>> &subseq_matrix)
 {
     vector<int> delimiters = choseFromInterval(4, 1, SIZE);
     
@@ -382,6 +357,10 @@ Solution ILS(int maxIter, int maxIterIls)
     for(int i = 0; i < maxIter; i++)
     {
         Solution s = Construct();
+        vector<vector<Subsequence>> subseq_matrix(s.sequence.size(), 
+            vector<Subsequence>(s.sequence.size()));
+        UpdateAllSubseq(&s, subseq_matrix);
+        s.cost = subseq_matrix[0][s.sequence.size()-1].c;
 
         Solution best = s;
 
@@ -389,7 +368,7 @@ Solution ILS(int maxIter, int maxIterIls)
 
         while(iterIls <= maxIterIls)
         {
-            LocalSearch(&s);
+            LocalSearch(&s, subseq_matrix);
             
             if(s.cost < best.cost)
             {
@@ -397,7 +376,7 @@ Solution ILS(int maxIter, int maxIterIls)
                 iterIls = 0;
             }
 
-            s = Pertubation(best);
+            s = Pertubation(best, subseq_matrix);
             
             iterIls++;
         }
@@ -415,11 +394,16 @@ int main(int argc, char** argv)
 
     cout << "Begining ILS" << endl;
     clock_t before = clock();
-    Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
+    //Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
+    
+    Solution s = Construct();
+    vector<vector<Subsequence>> subseq_matrix(s.sequence.size(), 
+        vector<Subsequence>(s.sequence.size()));
+    UpdateAllSubseq(&s, subseq_matrix);
+    s.cost = subseq_matrix[0][s.sequence.size()-1].c;
+
     float duration = (clock()-before);
     s.print("ILS Solution");
     cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
-
-
     return 0;
 }
