@@ -137,7 +137,8 @@ void sortInsertions(vector<InsertionInfo> &insertions)
 int lowerBiasedRand(int max)
 {
     double alpha = (double) rand() / RAND_MAX;
-    return rand() % ((int)ceil(alpha * max));
+    int limitOfBest = (int)ceil(alpha * max);
+    return limitOfBest>0?rand()%limitOfBest : 0;
 }
 
 Solution Construct()
@@ -413,13 +414,15 @@ int main(int argc, char** argv)
 
     initializeData(argv[1]);
 
-    cout << "Begining ILS" << endl;
-    clock_t before = clock();
-    Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
-    float duration = (clock()-before);
-    s.print("ILS Solution");
-    cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
-
+    for (int i = 0; i < 50; i++) 
+    {
+        cout << "Begining ILS" << endl;
+        clock_t before = clock();
+        Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
+        float duration = (clock()-before);
+        s.print("ILS Solution");
+        cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
+    }
 
     return 0;
 }
