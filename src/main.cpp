@@ -1,8 +1,6 @@
-#include <cmath>
-#include <cstddef>
-#include <cstdlib>
 #include <iostream>
 
+#include <iomanip>
 #include <ctime>
 #include <ostream>
 #include <vector>
@@ -116,6 +114,19 @@ void UpdateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
         for(int j = i-1; j >= 0; j--)
             subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
 }
+void printSubseqMatrix(const vector<vector<Subsequence>> & subseq)
+{   
+    cout<<"------------------------------------------------------"<<endl;
+    for(int i = 0; i < subseq.size(); i++)
+    {
+        for(int j = 0; j < subseq.size(); j++)
+        {
+            cout<<setfill(' ')<<setw(4)<<subseq[i][j].t<<" ";
+        }
+        cout<<endl;
+    }
+    cout<<"------------------------------------------------------"<<endl;
+}
 
 Solution Construct()
 {
@@ -146,51 +157,38 @@ Solution Construct()
 
 bool bestImprovementSwap(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
-    double bestDelta = 0;
+    double bestCost = s->cost;
     int best_i, best_j;
 
     for(int i = 1; i < s->sequence.size() - 1; i++)
     {
-        int vi = s->sequence[i];
-        int vi_predecessor = s->sequence[i-1];
-        int vi_succesor = s->sequence[i+1];
-
         for(int j = i+2; j < s->sequence.size() - 1; j++)
         {
-            int vj = s->sequence[j];
-            int vj_predecessor = s->sequence[j-1];
-            int vj_succesor = s->sequence[j+1];
+            Subsequence subs = subseq_matrix[0][i-1];
+            subs = Subsequence::Concatenate(subs, subseq_matrix[j][j]);
+            subs = Subsequence::Concatenate(subs, subseq_matrix[i+1][j-1]);
+            subs = Subsequence::Concatenate(subs, subseq_matrix[i][i]);
+            subs = Subsequence::Concatenate(subs, subseq_matrix[j+1][s->sequence.size()-1]);
 
-            double delta = 
-                -dt->getDistance(vi_predecessor, vi)
-                -dt->getDistance(vi, vi_succesor) 
-                +dt->getDistance(vi_predecessor, vj)
-                +dt->getDistance(vj, vi_succesor)
-                
-                -dt->getDistance(vj_predecessor, vj)
-                -dt->getDistance(vj, vj_succesor)
-                +dt->getDistance(vj_predecessor, vi)
-                +dt->getDistance(vi, vj_succesor);
-
-            if(delta < bestDelta)
+            if(subs.c < bestCost)
             {
-                bestDelta = delta;
+                bestCost = subs.c;
                 best_i = i;
                 best_j = j;
             }
         }
     }
     
-    if(bestDelta < 0) 
+    if(bestCost < s->cost) 
     {
         std::swap(s->sequence[best_i], s->sequence[best_j]);
-        s->cost = s->cost + bestDelta;
-
+        s->cost = bestCost;
+// TODO - Atualizar subseq_matrix ---------------------------------------
         return  true;
     }
     else return false;
 }
-bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
+bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix)//TODO
 {
     double bestDelta = 0;
     int best_i, best_j;
@@ -230,7 +228,7 @@ bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix
     }
     else return false;
 }
-bool bestImprovementOrOpt(Solution *s, int nVertex, vector<vector<Subsequence>> &subseq_matrix)
+bool bestImprovementOrOpt(Solution *s, int nVertex, vector<vector<Subsequence>> &subseq_matrix)//TODO
 {
     double bestDelta = 0;
     int best_block, best_edge;
@@ -323,7 +321,7 @@ void LocalSearch(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
         else NL.erase(NL.begin() + n);
     }
 } 
-Solution Pertubation(const Solution &s, vector<vector<Subsequence>> &subseq_matrix)
+Solution Pertubation(const Solution &s, vector<vector<Subsequence>> &subseq_matrix)//TODO
 {
     vector<int> delimiters = choseFromInterval(4, 1, SIZE);
     
@@ -394,7 +392,7 @@ int main(int argc, char** argv)
 
     cout << "Begining ILS" << endl;
     clock_t before = clock();
-    //Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
+    //Solution s = ILS(10, n<100?n:100);
     
     Solution s = Construct();
     vector<vector<Subsequence>> subseq_matrix(s.sequence.size(), 
@@ -405,5 +403,14 @@ int main(int argc, char** argv)
     float duration = (clock()-before);
     s.print("ILS Solution");
     cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
+
+    while(bestImprovementSwap(&s, subseq_matrix)) 
+    {
+        s.print();
+        printSubseqMatrix(subseq_matrix);
+        UpdateAllSubseq(&s, subseq_matrix);
+        printSubseqMatrix(subseq_matrix);
+    }
+    
     return 0;
 }
