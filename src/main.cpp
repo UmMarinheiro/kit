@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <iostream>
 
 #include <iomanip>
@@ -44,6 +45,12 @@ void updateCost(Solution &toUpdate)
         duration += dt->getDistance(toUpdate.sequence[i], toUpdate.sequence[i+1]);
         toUpdate.cost += duration;
     }
+}
+void verifyCost(Solution &toVerify)
+{
+    Solution s(toVerify);
+    updateCost(s);
+    cout<<toVerify.cost-s.cost<<endl;
 }
 
 typedef struct Subsequence
@@ -201,7 +208,7 @@ bool bestImprovementSwap(Solution *s, vector<vector<Subsequence>> &subseq_matrix
     }
     else return false;
 }
-bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix)//TODO
+bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     double bestCost = s->cost;
     int best_i, best_j;
@@ -242,58 +249,78 @@ bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix
     }
     else return false;
 }
-bool bestImprovementOrOpt(Solution *s, int nVertex, vector<vector<Subsequence>> &subseq_matrix)//TODO
+bool bestImprovementOrOpt(Solution *s, vector<vector<Subsequence>> &subseq_matrix, int nVertex)//TODO
 {
-    double bestDelta = 0;
+    double bestCost = s->cost;
     int best_block, best_edge;
+    int n = s->sequence.size();
 
-    for(int block_start_index = 1; block_start_index < s->sequence.size()-1 - (nVertex-1); block_start_index++)
+    for(int block_start_index = 1; block_start_index < n-1 - (nVertex-1); block_start_index++)
     {
-        int block_predecessor = s->sequence[block_start_index-1];
-        int block_start = s->sequence[block_start_index];
-        int block_end = s->sequence[block_start_index + nVertex-1];
-        int block_succesor = s->sequence[block_start_index + nVertex];
+        int block_end_index = block_start_index + nVertex-1;
         
-        for(int j = 0; j < s->sequence.size()-1 - (nVertex+2); j++)
+        for(int j = 0; j < n-1 - (nVertex+2); j++)
         {
-            int edge_start_index = j + (j >= block_start_index-1)*(nVertex+2);
+            Subsequence subs;
+            int edge_start_index = j;
 
-            int edge_start = s->sequence[edge_start_index];
-            int edge_end = s->sequence[edge_start_index+1];
-
-            double delta = 
-                -dt->getDistance(block_predecessor, block_start) 
-                -dt->getDistance(block_end, block_succesor)
-                
-                +dt->getDistance(block_predecessor, block_succesor)
-                -dt->getDistance(edge_start, edge_end)
-                
-                +dt->getDistance(edge_start, block_start)
-                +dt->getDistance(block_end, edge_end);
-
-
-            if(delta < bestDelta)
+            if(j >= block_start_index-1)
             {
-                bestDelta = delta;
+                edge_start_index += nVertex+2;
+
+                subs = subseq_matrix[0][block_start_index-1];
+                subs = Subsequence::Concatenate(subs,subseq_matrix[block_end_index+1][edge_start_index]);
+                subs = Subsequence::Concatenate(subs,subseq_matrix[block_start_index][block_end_index]);
+                subs = Subsequence::Concatenate(subs,subseq_matrix[edge_start_index+1][n-1]);
+            }
+            else
+            {
+                subs = subseq_matrix[0][edge_start_index];
+                subs = Subsequence::Concatenate(subs,subseq_matrix[block_start_index][block_end_index]);
+                subs = Subsequence::Concatenate(subs,subseq_matrix[edge_start_index+1][block_start_index]);
+                subs = Subsequence::Concatenate(subs,subseq_matrix[block_end_index+1][n-1]);
+            }
+
+            if(subs.c < bestCost)
+            {
+                bestCost = subs.c;
                 best_block = block_start_index;
                 best_edge = edge_start_index;
             }
         }
     }
 
-    if(bestDelta < 0) 
+    if(bestCost < s->cost) 
     {
+        int higher_bound, lower_bound;
         if(best_block<best_edge)
+        {
             rotate(
                 s->sequence.begin()+best_block, 
                 s->sequence.begin()+best_block + nVertex, 
                 s->sequence.begin()+best_edge + 1);
+            higher_bound = best_edge;
+            lower_bound = best_block;
+        }
         else 
+        {
             rotate(
                 s->sequence.begin()+best_edge + 1, 
                 s->sequence.begin()+best_block, 
                 s->sequence.begin()+best_block + nVertex);
-        s->cost = s->cost + bestDelta;
+            higher_bound = best_block;
+            lower_bound = best_edge;
+        }
+        s->cost = bestCost;
+        
+        for(int i = lower_bound; i <= higher_bound; i++) initiateNode(i, s, subseq_matrix);
+
+        for(int i = 0; i <= higher_bound; i++)
+            for(int j = (i>=lower_bound)?(i+1):(lower_bound); j < n; j++)
+                subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j-1], subseq_matrix[j][j]);
+        for(int i = n-1; i >= lower_bound; i--)
+            for(int j = (i<=higher_bound)?(i-1):(higher_bound); j >= 0; j--)
+                subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
 
         return  true;
     }
@@ -318,13 +345,13 @@ void LocalSearch(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
             improved = bestImprovement2Opt(s, subseq_matrix);
             break;
         case 3:
-            improved = bestImprovementOrOpt(s,1,subseq_matrix);
+            improved = bestImprovementOrOpt(s,subseq_matrix,1);
             break;
         case 4:
-            improved = bestImprovementOrOpt(s,2,subseq_matrix);
+            improved = bestImprovementOrOpt(s,subseq_matrix,2);
             break;
         case 5:
-            improved = bestImprovementOrOpt(s,3,subseq_matrix);
+            improved = bestImprovementOrOpt(s,subseq_matrix,3);
             break;
         }
 
@@ -388,7 +415,7 @@ Solution ILS(int maxIter, int maxIterIls)
                 iterIls = 0;
             }
 
-            s = Pertubation(best, subseq_matrix);
+            //s = Pertubation(best, subseq_matrix);
             
             iterIls++;
         }
@@ -406,23 +433,11 @@ int main(int argc, char** argv)
 
     cout << "Begining ILS" << endl;
     clock_t before = clock();
-    //Solution s = ILS(10, n<100?n:100);
-    
-    Solution s = Construct();
-    vector<vector<Subsequence>> subseq_matrix(s.sequence.size(), 
-        vector<Subsequence>(s.sequence.size()));
-    UpdateAllSubseq(&s, subseq_matrix);
-    s.cost = subseq_matrix[0][s.sequence.size()-1].c;
+    Solution s = ILS(10, SIZE<100?SIZE:100);
 
     float duration = (clock()-before);
     s.print("ILS Solution");
     cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
-
-    while(bestImprovementSwap(&s, subseq_matrix)) 
-    {
-        s.print();
-        VerifySubseq(&s, subseq_matrix);
-    }
     
     return 0;
 }
