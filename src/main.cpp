@@ -25,7 +25,7 @@ typedef struct Solution
 {
     vector<int> sequence;
     double cost;
-    void print()
+    void print() const
     {
         for(int i = 0; i < sequence.size() - 1; i++)
             cout << sequence.at(i) << " -> ";
@@ -33,7 +33,7 @@ typedef struct Solution
 
         cout << "Cost: " << cost << std::endl;
     }
-    void print(string name) {cout<<name<<"="<<endl; print(); }
+    void print(string name) const {cout<<name<<"="<<endl; print(); }
 }Solution;
 void updateCost(Solution &toUpdate)
 {
@@ -46,11 +46,12 @@ void updateCost(Solution &toUpdate)
         toUpdate.cost += duration;
     }
 }
-void verifyCost(Solution &toVerify)
+bool verifyCost(Solution &toVerify)
 {
     Solution s(toVerify);
     updateCost(s);
     cout<<toVerify.cost-s.cost<<endl;
+    return (toVerify.cost-s.cost);
 }
 
 typedef struct Subsequence
@@ -93,7 +94,7 @@ vector<int> choseFromInterval(int n, int first, int limit)
     }
     return chosen;
 }
-void initiateNode(int i, Solution *s, vector<vector<Subsequence>> &subseq_matrix)
+void initiateNode(const int &i, const Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     subseq_matrix[i][i].w = (i > 0);
     subseq_matrix[i][i].t = 0;
@@ -101,7 +102,7 @@ void initiateNode(int i, Solution *s, vector<vector<Subsequence>> &subseq_matrix
     subseq_matrix[i][i].first = s->sequence[i];
     subseq_matrix[i][i].last = s->sequence[i];
 }
-void UpdateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
+void updateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     int n = s->sequence.size();
 
@@ -115,16 +116,16 @@ void UpdateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
         for(int j = i-1; j >= 0; j--)
             subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
 }
-void VerifySubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
+void verifySubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     vector<vector<Subsequence>> subseq_matrixc(subseq_matrix);
-    UpdateAllSubseq(s, subseq_matrixc);
+    updateAllSubseq(s, subseq_matrixc);
 
     for(int i = 0; i < subseq_matrix.size(); i++)
     {
         for(int j = 0; j < subseq_matrix.size(); j++)
         {
-            cout<<setfill(' ')<<setw(5)<<subseq_matrixc[i][j].c-subseq_matrix[i][j].c<<" ";
+            cout<<setfill(' ')<<setw(5)<<subseq_matrixc[i][j].first-subseq_matrix[i][j].c<<" ";
         }
         cout<<endl;
     }
@@ -249,7 +250,7 @@ bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix
     }
     else return false;
 }
-bool bestImprovementOrOpt(Solution *s, vector<vector<Subsequence>> &subseq_matrix, int nVertex)//TODO
+bool bestImprovementOrOpt(Solution *s, vector<vector<Subsequence>> &subseq_matrix, int nVertex)
 {
     double bestCost = s->cost;
     int best_block, best_edge;
@@ -277,7 +278,7 @@ bool bestImprovementOrOpt(Solution *s, vector<vector<Subsequence>> &subseq_matri
             {
                 subs = subseq_matrix[0][edge_start_index];
                 subs = Subsequence::Concatenate(subs,subseq_matrix[block_start_index][block_end_index]);
-                subs = Subsequence::Concatenate(subs,subseq_matrix[edge_start_index+1][block_start_index]);
+                subs = Subsequence::Concatenate(subs,subseq_matrix[edge_start_index+1][block_start_index-1]);
                 subs = Subsequence::Concatenate(subs,subseq_matrix[block_end_index+1][n-1]);
             }
 
@@ -308,8 +309,8 @@ bool bestImprovementOrOpt(Solution *s, vector<vector<Subsequence>> &subseq_matri
                 s->sequence.begin()+best_edge + 1, 
                 s->sequence.begin()+best_block, 
                 s->sequence.begin()+best_block + nVertex);
-            higher_bound = best_block;
-            lower_bound = best_edge;
+            higher_bound = best_block+nVertex-1;
+            lower_bound = best_edge+1;
         }
         s->cost = bestCost;
         
@@ -398,7 +399,7 @@ Solution ILS(int maxIter, int maxIterIls)
         Solution s = Construct();
         vector<vector<Subsequence>> subseq_matrix(s.sequence.size(), 
             vector<Subsequence>(s.sequence.size()));
-        UpdateAllSubseq(&s, subseq_matrix);
+        updateAllSubseq(&s, subseq_matrix);
         s.cost = subseq_matrix[0][s.sequence.size()-1].c;
 
         Solution best = s;
