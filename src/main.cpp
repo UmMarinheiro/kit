@@ -65,12 +65,6 @@ typedef struct Subsequence
     }
 } Subsequence;
 
-typedef struct InsertionInfo
-{
-    int insertedNode;
-    int removedEdge;
-    double cost;
-} InsertionInfo;
 vector<int> choseFromInterval(int n, int first, int limit)
 {
     vector<int> chosen;
@@ -92,19 +86,19 @@ vector<int> choseFromInterval(int n, int first, int limit)
     }
     return chosen;
 }
+void initiateNode(int i, Solution *s, vector<vector<Subsequence>> &subseq_matrix)
+{
+    subseq_matrix[i][i].w = (i > 0);
+    subseq_matrix[i][i].t = 0;
+    subseq_matrix[i][i].c = 0;
+    subseq_matrix[i][i].first = s->sequence[i];
+    subseq_matrix[i][i].last = s->sequence[i];
+}
 void UpdateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     int n = s->sequence.size();
 
-    for(int i = 0; i < n; i ++)
-    {
-        int v = s->sequence[i];
-        subseq_matrix[i][i].w = (i > 0);
-        subseq_matrix[i][i].t = 0;
-        subseq_matrix[i][i].c = 0;
-        subseq_matrix[i][i].first = s->sequence[i];
-        subseq_matrix[i][i].last = s->sequence[i];
-    }
+    for(int i = 0; i < n; i ++) initiateNode(i, s, subseq_matrix);
 
     for(int i = 0; i < n; i++)
         for(int j = i+1; j < n; j++)
@@ -159,16 +153,17 @@ bool bestImprovementSwap(Solution *s, vector<vector<Subsequence>> &subseq_matrix
 {
     double bestCost = s->cost;
     int best_i, best_j;
+    int n = s->sequence.size();
 
-    for(int i = 1; i < s->sequence.size() - 1; i++)
+    for(int i = 1; i < n - 1; i++)
     {
-        for(int j = i+2; j < s->sequence.size() - 1; j++)
+        for(int j = i+2; j < n - 1; j++)
         {
             Subsequence subs = subseq_matrix[0][i-1];
             subs = Subsequence::Concatenate(subs, subseq_matrix[j][j]);
             subs = Subsequence::Concatenate(subs, subseq_matrix[i+1][j-1]);
             subs = Subsequence::Concatenate(subs, subseq_matrix[i][i]);
-            subs = Subsequence::Concatenate(subs, subseq_matrix[j+1][s->sequence.size()-1]);
+            subs = Subsequence::Concatenate(subs, subseq_matrix[j+1][n-1]);
 
             if(subs.c < bestCost)
             {
@@ -183,7 +178,24 @@ bool bestImprovementSwap(Solution *s, vector<vector<Subsequence>> &subseq_matrix
     {
         std::swap(s->sequence[best_i], s->sequence[best_j]);
         s->cost = bestCost;
-// TODO - Atualizar subseq_matrix ---------------------------------------
+
+        initiateNode(best_i, s, subseq_matrix);
+        initiateNode(best_j, s, subseq_matrix);
+
+        for(int i = 0; i <= best_i; i++)
+            for(int j = best_i + (i == best_i); j < n; j++)
+                subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j-1], subseq_matrix[j][j]);
+        for(int i = best_i+1; i <= best_j; i++)
+            for(int j = best_j + (i == best_j); j < n; j++)
+                subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j-1], subseq_matrix[j][j]);
+
+        for(int i = best_j-1; i >= best_i; i--)
+            for(int j = best_i - (i == best_i); j >= 0; j--)
+                subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
+        for(int i = n-1; i >= best_j; i--)
+            for(int j = best_j - (i == best_j); j >= 0; j--)
+                subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
+
         return  true;
     }
     else return false;
