@@ -108,18 +108,19 @@ void UpdateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
         for(int j = i-1; j >= 0; j--)
             subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
 }
-void printSubseqMatrix(const vector<vector<Subsequence>> & subseq)
-{   
-    cout<<"------------------------------------------------------"<<endl;
-    for(int i = 0; i < subseq.size(); i++)
+void VerifySubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
+{
+    vector<vector<Subsequence>> subseq_matrixc(subseq_matrix);
+    UpdateAllSubseq(s, subseq_matrixc);
+
+    for(int i = 0; i < subseq_matrix.size(); i++)
     {
-        for(int j = 0; j < subseq.size(); j++)
+        for(int j = 0; j < subseq_matrix.size(); j++)
         {
-            cout<<setfill(' ')<<setw(4)<<subseq[i][j].t<<" ";
+            cout<<setfill(' ')<<setw(5)<<subseq_matrixc[i][j].c-subseq_matrix[i][j].c<<" ";
         }
         cout<<endl;
     }
-    cout<<"------------------------------------------------------"<<endl;
 }
 
 Solution Construct()
@@ -202,39 +203,40 @@ bool bestImprovementSwap(Solution *s, vector<vector<Subsequence>> &subseq_matrix
 }
 bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix)//TODO
 {
-    double bestDelta = 0;
+    double bestCost = s->cost;
     int best_i, best_j;
+    int n = s->sequence.size();
 
     for(int i = 0; i < s->sequence.size()-1; i++)
     {
-        int ei_start = s->sequence[i];
-        int ei_end = s->sequence[i+1];
-
         for(int j = i+2; j < s->sequence.size()-1; j++)
         {
-            int ej_start = s->sequence[j];
-            int ej_end = s->sequence[j+1];
-
-            double delta = 
-                -dt->getDistance(ei_start, ei_end)
-                -dt->getDistance(ej_start, ej_end)
-                
-                +dt->getDistance(ei_start, ej_start)
-                +dt->getDistance(ei_end, ej_end);
-
-            if(delta < bestDelta)
+            Subsequence subs = subseq_matrix[0][i];
+            subs = Subsequence::Concatenate(subs, subseq_matrix[j][i+1]);
+            subs = Subsequence::Concatenate(subs, subseq_matrix[j+1][n-1]);
+            
+            if(subs.c < bestCost)
             {
-                bestDelta = delta;
+                bestCost = subs.c;
                 best_i = i;
                 best_j = j;
             }
         }
     }
 
-    if(bestDelta < 0) 
+    if(bestCost < s->cost) 
     {
         reverse(s->sequence.begin() + best_i + 1, s->sequence.begin() + best_j + 1);
-        s->cost = s->cost + bestDelta;
+        s->cost = bestCost;
+
+        for(int i = best_i + 1; i <= best_j; i++) initiateNode(i, s, subseq_matrix);
+
+        for(int i = 0; i <= best_j; i++)
+            for(int j = (i>best_i)?(i+1):(best_i+1); j < n; j++)
+                subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j-1], subseq_matrix[j][j]);
+        for(int i = n-1; i > best_i; i--)
+            for(int j = (i<=best_j)?(i-1):(best_j); j >= 0; j--)
+                subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
 
         return true;
     }
@@ -419,9 +421,7 @@ int main(int argc, char** argv)
     while(bestImprovementSwap(&s, subseq_matrix)) 
     {
         s.print();
-        printSubseqMatrix(subseq_matrix);
-        UpdateAllSubseq(&s, subseq_matrix);
-        printSubseqMatrix(subseq_matrix);
+        VerifySubseq(&s, subseq_matrix);
     }
     
     return 0;
