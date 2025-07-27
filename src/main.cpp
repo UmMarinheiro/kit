@@ -414,15 +414,12 @@ int main(int argc, char** argv)
 
     initializeData(argv[1]);
 
-    for (int i = 0; i < 50; i++) 
-    {
-        cout << "Begining ILS" << endl;
-        clock_t before = clock();
-        Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
-        float duration = (clock()-before);
-        s.print("ILS Solution");
-        cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
-    }
+    cout << "Begining ILS" << endl;
+    clock_t before = clock();
+    Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
+    float duration = (clock()-before);
+    s.print("ILS Solution");
+    cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
 
     return 0;
 }
