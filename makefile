@@ -49,5 +49,8 @@ clean:
 	@echo "\033[31mcleaning obj directory \033[0m"
 	@rm tsp -f $(OBJDIR)/*.o $(OBJDIR)/*.d
 
+runall:
+	./tsp instances/a280.tsp instances/kroA150.tsp instances/ali535.tsp instances/kroA200.tsp instances/att48.tsp instances/kroB100.tsp instances/att532.tsp instances/kroB150.tsp instances/bayg29.tsp instances/kroB200.tsp instances/bays29.tsp instances/kroC100.tsp instances/berlin52.tsp instances/kroD100.tsp instances/bier127.tsp instances/kroE100.tsp instances/brazil58.tsp instances/lin105.tsp instances/brg180.tsp instances/lin318.tsp instances/burma14.tsp instances/linhp318.tsp instances/ch130.tsp instances/pcb442.tsp instances/ch150.tsp instances/pr107.tsp instances/d198.tsp instances/pr124.tsp instances/d493.tsp instances/pr136.tsp instances/dantzig42.tsp instances/pr144.tsp instances/eil101.tsp instances/pr152.tsp instances/eil51.tsp instances/pr226.tsp instances/eil76.tsp instances/pr264.tsp instances/fl417.tsp instances/pr299.tsp instances/fri26.tsp instances/pr76.tsp instances/gil262.tsp instances/rat195.tsp instances/gr120.tsp instances/rat99.tsp instances/gr137.tsp instances/rd100.tsp instances/gr17.tsp instances/rd400.tsp instances/gr202.tsp instances/si175.tsp instances/gr21.tsp instances/si535.tsp instances/gr229.tsp instances/st70.tsp instances/gr24.tsp instances/swiss42.tsp instances/gr431.tsp instances/ts225.tsp instances/gr48.tsp instances/tsp225.tsp instances/gr96.tsp instances/u159.tsp instances/hk48.tsp instances/ulysses16.tsp instances/kroA100.tsp instances/ulysses22.tsp 
+
 
 rebuild: clean tsp

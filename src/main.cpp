@@ -1,11 +1,16 @@
-#include <cstddef>
 #include <iostream>
 
 #include <ctime>
+#include <string>
 #include <vector>
 #include <algorithm>
 #include "Data.h"
 
+#define REPS 10
+
+#ifdef FILEOUTPUT
+#include <fstream>
+#endif
 using namespace std;
 
 #define SIZE dt->getDimension()
@@ -13,9 +18,9 @@ Data * dt = NULL;
 void initializeData(char* file)
 {
     cout << "Reading " << file << " ..." << endl;
-    static Data data = Data(2, file);
-    data.read();
-    dt = &data;
+    delete dt;
+    dt = new Data(2, file);
+    dt->read();
     cout << "Succesfully read " << file << " !" << endl;
 }
 
@@ -23,15 +28,17 @@ typedef struct Solution
 {
     vector<int> sequence;
     double cost;
-    void print()
+    string get_string()
     {
+        string s;
         for(int i = 0; i < sequence.size() - 1; i++)
-            cout << sequence.at(i) << " -> ";
-        cout << sequence.back() << std::endl;
+            s += to_string(sequence.at(i)) + " -> ";
+        s += to_string(sequence.back()) + "\n";
 
-        cout << "Cost: " << cost << std::endl;
+        s += "Cost: " + to_string(cost) + "\n";
+        return s;
     }
-    void print(string name) {cout<<name<<"="<<endl; print(); }
+    string get_string(string name) {return  name+"=\n"+get_string(); }
 }Solution;
 void updateCost(Solution &toUpdate)
 {
@@ -412,14 +419,39 @@ int main(int argc, char** argv)
 {
     srand(time(NULL));
 
-    initializeData(argv[1]);
 
-    cout << "Begining ILS" << endl;
-    clock_t before = clock();
-    Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));
-    float duration = (clock()-before);
-    s.print("ILS Solution");
-    cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
+    #ifdef FILEOUTPUT
+    ofstream file;
+    #define output file
+    #else
+    #define output cout
+    #endif
 
+    for(int i = 1; i < argc; i++)
+    {    
+        #ifdef FILEOUTPUT
+        file.open("tsp_"+(string)(argv[i] + 10)+".txt");
+        #endif
+
+        clock_t before = clock();
+        
+        initializeData(argv[i]);
+
+        output << "Begining ILS on " << argv[i] << endl;
+        for(int j = 1; j <= REPS; j++)
+        {
+            Solution s = ILS(50, SIZE/(1 + (SIZE>=150)));            
+            output<<s.get_string("ILS Solution " + to_string(j) + " to " + argv[i]);
+        }
+        float duration = (clock()-before);
+        output << argv[i] << " took " << (float)duration/(CLOCKS_PER_SEC + REPS) << " seconds on average" << endl;
+        output << "-------------------------------------------------------------------------" << endl;
+        
+        #ifdef FILEOUTPUT
+        file.close();
+        #endif
+    }
+
+    delete dt;
     return 0;
 }
