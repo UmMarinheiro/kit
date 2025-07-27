@@ -94,7 +94,7 @@ vector<int> choseFromInterval(int n, int first, int limit)
     }
     return chosen;
 }
-void initiateNode(const int &i, const Solution *s, vector<vector<Subsequence>> &subseq_matrix)
+void initiateNodeAtIndex(const int &i, const Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     subseq_matrix[i][i].w = (i > 0);
     subseq_matrix[i][i].t = 0;
@@ -106,7 +106,7 @@ void updateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
 {
     int n = s->sequence.size();
 
-    for(int i = 0; i < n; i ++) initiateNode(i, s, subseq_matrix);
+    for(int i = 0; i < n; i ++) initiateNodeAtIndex(i, s, subseq_matrix);
 
     for(int i = 0; i < n; i++)
         for(int j = i+1; j < n; j++)
@@ -125,7 +125,7 @@ void verifySubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
     {
         for(int j = 0; j < subseq_matrix.size(); j++)
         {
-            cout<<setfill(' ')<<setw(5)<<subseq_matrixc[i][j].first-subseq_matrix[i][j].c<<" ";
+            cout<<setfill(' ')<<setw(5)<<subseq_matrixc[i][j].first-subseq_matrix[i][j].first<<" ";
         }
         cout<<endl;
     }
@@ -188,8 +188,8 @@ bool bestImprovementSwap(Solution *s, vector<vector<Subsequence>> &subseq_matrix
         std::swap(s->sequence[best_i], s->sequence[best_j]);
         s->cost = bestCost;
 
-        initiateNode(best_i, s, subseq_matrix);
-        initiateNode(best_j, s, subseq_matrix);
+        initiateNodeAtIndex(best_i, s, subseq_matrix);
+        initiateNodeAtIndex(best_j, s, subseq_matrix);
 
         for(int i = 0; i <= best_i; i++)
             for(int j = best_i + (i == best_i); j < n; j++)
@@ -237,7 +237,7 @@ bool bestImprovement2Opt(Solution *s, vector<vector<Subsequence>> &subseq_matrix
         reverse(s->sequence.begin() + best_i + 1, s->sequence.begin() + best_j + 1);
         s->cost = bestCost;
 
-        for(int i = best_i + 1; i <= best_j; i++) initiateNode(i, s, subseq_matrix);
+        for(int i = best_i + 1; i <= best_j; i++) initiateNodeAtIndex(i, s, subseq_matrix);
 
         for(int i = 0; i <= best_j; i++)
             for(int j = (i>best_i)?(i+1):(best_i+1); j < n; j++)
@@ -314,7 +314,7 @@ bool bestImprovementOrOpt(Solution *s, vector<vector<Subsequence>> &subseq_matri
         }
         s->cost = bestCost;
         
-        for(int i = lower_bound; i <= higher_bound; i++) initiateNode(i, s, subseq_matrix);
+        for(int i = lower_bound; i <= higher_bound; i++) initiateNodeAtIndex(i, s, subseq_matrix);
 
         for(int i = 0; i <= higher_bound; i++)
             for(int j = (i>=lower_bound)?(i+1):(lower_bound); j < n; j++)
@@ -363,7 +363,7 @@ void LocalSearch(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
         else NL.erase(NL.begin() + n);
     }
 } 
-Solution Pertubation(const Solution &s, vector<vector<Subsequence>> &subseq_matrix)//TODO
+Solution Pertubation(const Solution &s, vector<vector<Subsequence>> &subseq_matrix)
 {
     vector<int> delimiters = choseFromInterval(4, 1, SIZE);
     
@@ -374,18 +374,22 @@ Solution Pertubation(const Solution &s, vector<vector<Subsequence>> &subseq_matr
     sr.sequence.insert(sr.sequence.end(), s.sequence.begin() + delimiters[0], s.sequence.begin() + delimiters[1]);
     sr.sequence.insert(sr.sequence.end(), s.sequence.begin() + delimiters[3], s.sequence.end());
     
-    double delta = 
-        -dt->getDistance(s.sequence[delimiters[0]-1], s.sequence[delimiters[0]])
-        -dt->getDistance(s.sequence[delimiters[1]-1], s.sequence[delimiters[1]])
-        +dt->getDistance(s.sequence[delimiters[2]-1], s.sequence[delimiters[0]])
-        +dt->getDistance(s.sequence[delimiters[1]-1], s.sequence[delimiters[3]])
-        
-        -dt->getDistance(s.sequence[delimiters[2]-1], s.sequence[delimiters[2]])
-        -dt->getDistance(s.sequence[delimiters[3]-1], s.sequence[delimiters[3]])
-        +dt->getDistance(s.sequence[delimiters[0]-1], s.sequence[delimiters[2]])
-        +dt->getDistance(s.sequence[delimiters[3]-1], s.sequence[delimiters[1]]);
+    Subsequence subs = subseq_matrix[0][delimiters[0]-1];
+    subs = Subsequence::Concatenate(subs,subseq_matrix[delimiters[2]][delimiters[3]-1]);
+    subs = Subsequence::Concatenate(subs,subseq_matrix[delimiters[1]][delimiters[2]-1]);
+    subs = Subsequence::Concatenate(subs,subseq_matrix[delimiters[0]][delimiters[1]-1]);
+    subs = Subsequence::Concatenate(subs,subseq_matrix[delimiters[3]][sr.sequence.size()-1]);
 
-    sr.cost = s.cost + delta;
+    sr.cost = subs.c;
+
+    for(int i = delimiters[0]; i <= delimiters[3]-1; i++) initiateNodeAtIndex(i,&sr,subseq_matrix);
+
+    for(int i = 0; i <= delimiters[3]-1; i++)
+        for(int j = (i>=delimiters[0])?(i+1):(delimiters[0]); j < sr.sequence.size(); j++)
+            subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j-1], subseq_matrix[j][j]);
+    for(int i = sr.sequence.size()-1; i >= delimiters[0]; i--)
+        for(int j = (i<=delimiters[3]-1)?(i-1):(delimiters[3]-1); j >= 0; j--)
+            subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
 
     return sr;
 }
@@ -403,6 +407,7 @@ Solution ILS(int maxIter, int maxIterIls)
         s.cost = subseq_matrix[0][s.sequence.size()-1].c;
 
         Solution best = s;
+        vector<vector<Subsequence>> bestSubseq(subseq_matrix);
 
         int iterIls = 0;
 
@@ -413,10 +418,11 @@ Solution ILS(int maxIter, int maxIterIls)
             if(s.cost < best.cost)
             {
                 best = s;
+                bestSubseq = subseq_matrix;
                 iterIls = 0;
             }
-
-            //s = Pertubation(best, subseq_matrix);
+            else subseq_matrix = bestSubseq;
+            s = Pertubation(best, subseq_matrix);
             
             iterIls++;
         }
@@ -439,6 +445,6 @@ int main(int argc, char** argv)
     float duration = (clock()-before);
     s.print("ILS Solution");
     cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
-    
+
     return 0;
 }
