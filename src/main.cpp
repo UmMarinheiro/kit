@@ -158,6 +158,10 @@ void addSubdivisionsOfNodeToTree(Node *parent, list<Node> &tree)
 		tree.push_back(n);
 	}
 }
+
+_List_iterator<Node> DFS(list<Node> &tree) {return prev(tree.end());}
+_List_iterator<Node> BFS(list<Node> &tree) {return tree.begin();}
+
 Solution BranchNBound()
 {
 	Solution best = {{}, numeric_limits<double>::infinity()}; // TODO Testar com construcao
@@ -168,7 +172,7 @@ Solution BranchNBound()
 
 	while(!tree.empty())
 	{
-		auto node = prev(tree.end());
+		auto node = DFS(tree);
 		vector<vector<int>> subtours = getSolutionHungarian(&*node);
 
 		if(node->lower_bound > upper_bound) 
