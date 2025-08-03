@@ -1,7 +1,7 @@
 #ifndef DATA_H
 #define DATA_H
 
-#define INFINITE 0
+#define INFINITE 99999999
 
 #include <iostream>
 #include <string>
@@ -14,13 +14,13 @@ public:
 	Data( int, char * );
 	~Data();
 
-	void read();
+	void readData();
 	void printMatrixDist();
 	inline int getDimension(){ return dimension; };
-	inline double getDistance(int i, int j){return distMatrix[i-1][j-1]; };
+	inline double getDistance(int i, int j){return distMatrix[i][j]; };
 	inline double **getMatrixCost(){return distMatrix; }
-	inline double getXCoord(int i){return xCoord[i-1];}
-	inline double getYCoord(int i){return yCoord[i-1];}
+	inline double getXCoord(int i){return xCoord[i];}
+	inline double getYCoord(int i){return yCoord[i];}
 	inline bool getExplicitCoord(){return explicitCoord; };
 
 	string getInstanceName();                    //Get instance's name
