@@ -40,7 +40,22 @@ void freeCost()
 	delete [] cost;
 }
 
-typedef struct
+typedef struct Solution
+{
+    vector<int> sequence;
+    double cost;
+    void print() const
+    {
+        for(int i = 0; i < sequence.size() - 1; i++)
+            cout << sequence.at(i) << " -> ";
+        cout << sequence.back() << std::endl;
+
+        cout << "Cost: " << cost << std::endl;
+    }
+    void print(string name) const {cout<<name<<"="<<endl; print(); }
+}Solution;
+
+typedef struct Node
 {
 	vector<pair<int,int>> forbidden_arcs;
 	vector<vector<int>> subtours;
@@ -60,21 +75,16 @@ vector<vector<int>> getSolutionHungarian(Node *node)
 {
 	hungarian_problem_t p;
 
-	cout<<"Updating costMatrix..."<<endl;
 	vector<int> forbiden_values(node->forbidden_arcs.size());
-	cout<<"Blocking: ";
 	for(int i = 0; i < node->forbidden_arcs.size(); i++)
 	{
 		pair<int,int> &current = node->forbidden_arcs[i];
 		forbiden_values[i] = cost[current.first-1][current.second-1];
 
 		cost[current.first-1][current.second-1] = INFINITE;
-		cout<<current.first<<"-"<<current.second<<"  ";
 	}
-	cout<<endl;
 
-	cout<<"Running hungarian..."<<endl;
-	hungarian_init(&p, cost, dt->getDimension(), dt->getDimension(), MODE); // Carregando o problema
+	hungarian_init(&p, cost, dt->getDimension(), dt->getDimension(), MODE); 
 
 	node->lower_bound = hungarian_solve(&p);
 
@@ -84,16 +94,13 @@ vector<vector<int>> getSolutionHungarian(Node *node)
 	int n = 0;
 	int minIndex = 0, minSize = INFINITE;
 
-	cout<<"--Verifying subtours--"<<endl;
 	node->subtours = {};
 
 	while(!nonVisited.empty())
 	{
-		cout<<"Subtour "<<n<<": "<<endl;
 		int toVisit = *nonVisited.begin();
 		node->subtours.push_back({});
 
-		cout<<"       ";
 		while(toVisit)
 		{
 			int current = toVisit;
@@ -101,13 +108,10 @@ vector<vector<int>> getSolutionHungarian(Node *node)
 			if(nonVisited.find(current) == nonVisited.end()) break;
 
 			node->subtours[n].push_back(current);
-			cout<<current<<" ";
-
+			
 			toVisit = getAssingment(&p, current);
 			nonVisited.erase(current);
 		}
-		cout<<endl;
-		cout<<"Subtour "<<n<<" ended"<<endl;
 		if(node->subtours[n].size() < minSize)
 		{
 			minSize = node->subtours[n].size();
@@ -115,28 +119,49 @@ vector<vector<int>> getSolutionHungarian(Node *node)
 		}
 		n++;
 	}
-	cout<<"--Subtours veryfied--"<<endl;
 	hungarian_free(&p);
-
-	cout<<"Hungarian concluded"<<endl;
 
 	node->feasible = node->subtours.size() == 1;
 	node->chosen = minIndex;
 
-	cout<<"Cleaning costMatrix"<<endl;
 	for(int i = 0; i < node->forbidden_arcs.size(); i++)
 	{
 		pair<int,int> &current = node->forbidden_arcs[i];
 		
 		cost[current.first-1][current.second-1] = forbiden_values[i];
-		//cost[current.second-1][current.first-1] = forbiden_values[i];
 	}
-	cout<<"Solution complete"<<endl;
 	return node->subtours;
 }
-double BranchNBound()
+void addSubdivisionsOfNodeToTree(Node *parent, list<Node> &tree)
 {
-	double upper_bound = numeric_limits<double>::infinity(); // TODO Testar com construcao
+	Node n;
+	n.forbidden_arcs = parent->forbidden_arcs;
+
+	pair<int,int> forbidden_arc = {
+		parent->subtours[parent->chosen][parent->subtours[parent->chosen].size()-1], 
+		parent->subtours[parent->chosen][0]
+	};
+	n.forbidden_arcs.push_back(forbidden_arc);
+	
+	tree.push_back(n);
+
+	for (int i = 0; i < parent->subtours[parent->chosen].size() - 1; i++)
+	{
+		n.forbidden_arcs = parent->forbidden_arcs;
+
+		forbidden_arc = {
+			parent->subtours[parent->chosen][i], 
+			parent->subtours[parent->chosen][i+1]
+		};
+		n.forbidden_arcs.push_back(forbidden_arc);
+		
+		tree.push_back(n);
+	}
+}
+Solution BranchNBound()
+{
+	Solution best = {{}, numeric_limits<double>::infinity()}; // TODO Testar com construcao
+	double &upper_bound = best.cost; 
 
 	Node root; 
 	list<Node> tree = {root};
@@ -144,43 +169,27 @@ double BranchNBound()
 	while(!tree.empty())
 	{
 		auto node = prev(tree.end());
-		getSolutionHungarian(&*node);
+		vector<vector<int>> subtours = getSolutionHungarian(&*node);
 
 		if(node->lower_bound > upper_bound) 
 		{
 			tree.erase(node);
 			continue;
 		}
-		else if(node->feasible) upper_bound = min(upper_bound, node->lower_bound);
-		else
+
+		if(node->feasible) 
 		{
-			Node n;
-			n.forbidden_arcs = node->forbidden_arcs;
-
-			pair<int,int> forbidden_arc = {
-				node->subtours[node->chosen][node->subtours[node->chosen].size()-1], 
-				node->subtours[node->chosen][0]
-			};
-			n.forbidden_arcs.push_back(forbidden_arc);
-			
-			tree.push_back(n);
-
-			for (int i = 0; i < node->subtours[node->chosen].size() - 1; i++)
+			if(node->lower_bound < upper_bound)
 			{
-				n.forbidden_arcs = node->forbidden_arcs;
-
-				forbidden_arc = {
-					node->subtours[node->chosen][i], 
-					node->subtours[node->chosen][i+1]
-				};
-				n.forbidden_arcs.push_back(forbidden_arc);
-				
-				tree.push_back(n);
+				upper_bound = node->lower_bound;
+				best.sequence = subtours[0];
+				best.sequence.push_back(subtours[0][0]);
 			}
 		}
+		else addSubdivisionsOfNodeToTree(&*node, tree);
 		tree.erase(node);
 	}
-	return upper_bound;
+	return best;
 }
 int main(int argc, char** argv) 
 {
@@ -188,8 +197,12 @@ int main(int argc, char** argv)
 	initializeCost();
 
 	cout << "Running BnB..." << endl;
-	double cost = BranchNBound();
-	cout << "Finished Bnb with cost: " << cost << endl;
+    clock_t before = clock();
+	Solution s = BranchNBound();
+
+    float duration = (clock()-before);
+    s.print("BnB Solution");
+    cout << "Took " << (float)duration/CLOCKS_PER_SEC << " seconds" << endl;
 	
 	freeData();
 	freeCost();
