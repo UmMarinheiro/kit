@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <limits>
+#include <queue>
 #include <vector>
 #include <list>
 #include <set>
@@ -13,6 +14,8 @@ using namespace std;
 
 
 #define MODE HUNGARIAN_MODE_MINIMIZE_COST
+enum searchType {DFS, BFS, LOWEST};
+searchType searchMethod = DFS;
 
 double **cost;
 Data * dt;
@@ -63,6 +66,11 @@ typedef struct Node
 	double lower_bound;
 	int chosen;
 	bool feasible;
+
+	bool operator<(const Node& other) const
+    {
+		return lower_bound < other.lower_bound;   
+    } 
 } Node;
 
 int getAssingment(hungarian_problem_t *p, int i)
@@ -132,7 +140,7 @@ vector<vector<int>> getSolutionHungarian(Node *node)
 	}
 	return node->subtours;
 }
-void addSubdivisionsOfNodeToTree(Node *parent, list<Node> &tree)
+void addSubdivisionsOfNodeToList(Node *parent, list<Node> &tree)
 {
 	Node n;
 	n.forbidden_arcs = parent->forbidden_arcs;
@@ -159,20 +167,21 @@ void addSubdivisionsOfNodeToTree(Node *parent, list<Node> &tree)
 	}
 }
 
-_List_iterator<Node> DFS(list<Node> &tree) {return prev(tree.end());}
-_List_iterator<Node> BFS(list<Node> &tree) {return tree.begin();}
+_List_iterator<Node> DFSFunction(list<Node> &tree) {return prev(tree.end());}
+_List_iterator<Node> BFSFunction(list<Node> &tree) {return tree.begin();}
 
-Solution BranchNBound()
+Solution BranchNBoundList()
 {
 	Solution best = {{}, numeric_limits<double>::infinity()}; // TODO Testar com construcao
 	double &upper_bound = best.cost; 
 
 	Node root; 
 	list<Node> tree = {root};
+	_List_iterator<Node> (*searchFunction)(list<Node> &tree) = searchMethod==DFS?&DFSFunction:&BFSFunction;
 
 	while(!tree.empty())
 	{
-		auto node = DFS(tree);
+		auto node = searchFunction(tree);
 		vector<vector<int>> subtours = getSolutionHungarian(&*node);
 
 		if(node->lower_bound > upper_bound) 
@@ -190,8 +199,66 @@ Solution BranchNBound()
 				best.sequence.push_back(subtours[0][0]);
 			}
 		}
-		else addSubdivisionsOfNodeToTree(&*node, tree);
+		else addSubdivisionsOfNodeToList(&*node, tree);
 		tree.erase(node);
+	}
+	return best;
+}
+
+void addSubdivisionsOfNodeToPriorityQueue(Node *parent, priority_queue<Node> &tree)
+{
+	Node n;
+	n.forbidden_arcs = parent->forbidden_arcs;
+
+	pair<int,int> forbidden_arc = {
+		parent->subtours[parent->chosen][parent->subtours[parent->chosen].size()-1], 
+		parent->subtours[parent->chosen][0]
+	};
+	n.forbidden_arcs.push_back(forbidden_arc);
+	
+	tree.push(n);
+
+	for (int i = 0; i < parent->subtours[parent->chosen].size() - 1; i++)
+	{
+		n.forbidden_arcs = parent->forbidden_arcs;
+
+		forbidden_arc = {
+			parent->subtours[parent->chosen][i], 
+			parent->subtours[parent->chosen][i+1]
+		};
+		n.forbidden_arcs.push_back(forbidden_arc);
+		
+		tree.push(n);
+	}
+}
+Solution BranchNBoundPriorityQueue()
+{
+	Solution best = {{}, numeric_limits<double>::infinity()}; // TODO Testar com construcao
+	double &upper_bound = best.cost; 
+
+	Node root; 
+	priority_queue<Node> tree;
+
+	tree.push(root);
+
+	while(!tree.empty())
+	{
+		auto node = tree.top(); 
+		tree.pop();
+		vector<vector<int>> subtours = getSolutionHungarian(&node);
+
+		if(node.lower_bound > upper_bound) continue;
+
+		if(node.feasible) 
+		{
+			if(node.lower_bound < upper_bound)
+			{
+				upper_bound = node.lower_bound;
+				best.sequence = subtours[0];
+				best.sequence.push_back(subtours[0][0]);
+			}
+		}
+		else addSubdivisionsOfNodeToPriorityQueue(&node, tree);
 	}
 	return best;
 }
@@ -200,9 +267,17 @@ int main(int argc, char** argv)
 	initializeData(argv[1]);
 	initializeCost();
 
+	if(argc >= 3 && ( (string)argv[2]=="BFS" || (string)argv[2]=="LOWEST"))
+	{
+		if((string)argv[2]=="BFS") searchMethod = BFS;
+		else searchMethod = LOWEST;
+		cout<<"Searching method: "<<argv[2]<<endl;
+	}
+	else cout<<"Searching method: DFS"<<endl;
+
 	cout << "Running BnB..." << endl;
     clock_t before = clock();
-	Solution s = BranchNBound();
+	Solution s = searchMethod==LOWEST?BranchNBoundPriorityQueue():BranchNBoundList();
 
     float duration = (clock()-before);
     s.print("BnB Solution");
