@@ -1,7 +1,6 @@
 #include <cstdio>
 #include <iostream>
 
-#include <iomanip>
 #include <ctime>
 #include <ostream>
 #include <vector>
@@ -15,9 +14,8 @@ Data * dt = NULL;
 void initializeData(char* file)
 {
     cout << "Reading " << file << " ..." << endl;
-    static Data data = Data(2, file);
-    data.read();
-    dt = &data;
+    dt = new Data(2,file);
+    dt->read();
     cout << "Succesfully read " << file << " !" << endl;
 }
 
@@ -45,13 +43,6 @@ void updateCost(Solution &toUpdate)
         duration += dt->getDistance(toUpdate.sequence[i], toUpdate.sequence[i+1]);
         toUpdate.cost += duration;
     }
-}
-bool verifyCost(Solution &toVerify)
-{
-    Solution s(toVerify);
-    updateCost(s);
-    cout<<toVerify.cost-s.cost<<endl;
-    return (toVerify.cost-s.cost);
 }
 
 typedef struct Subsequence
@@ -115,20 +106,6 @@ void updateAllSubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
     for(int i = n-1; i >= 0; i--)
         for(int j = i-1; j >= 0; j--)
             subseq_matrix[i][j] = Subsequence::Concatenate(subseq_matrix[i][j+1], subseq_matrix[j][j]);
-}
-void verifySubseq(Solution *s, vector<vector<Subsequence>> &subseq_matrix)
-{
-    vector<vector<Subsequence>> subseq_matrixc(subseq_matrix);
-    updateAllSubseq(s, subseq_matrixc);
-
-    for(int i = 0; i < subseq_matrix.size(); i++)
-    {
-        for(int j = 0; j < subseq_matrix.size(); j++)
-        {
-            cout<<setfill(' ')<<setw(5)<<subseq_matrixc[i][j].first-subseq_matrix[i][j].first<<" ";
-        }
-        cout<<endl;
-    }
 }
 
 Solution Construct()
