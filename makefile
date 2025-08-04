@@ -11,12 +11,16 @@ CONCERTINCDIR = $(CONCERTDIR)/include
 CCFLAGS = $(CCOPT)
 #############################
 
+#### quantas vezes cada teste vai
+FREQUENCY = 10
+
 #### flags do linker
 #############################
 
 #### diretorios com os source files e com os objs files
 SRCDIR = src
 OBJDIR = obj
+TESTDIR = tests
 #############################
 
 #### lista de todos os srcs e todos os objs
@@ -47,10 +51,77 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 #delete objetos e arquivos de dependencia
 clean:
 	@echo "\033[31mcleaning obj directory \033[0m"
-	@rm tsp -f $(OBJDIR)/*.o $(OBJDIR)/*.d
+	@rm tsp -f $(OBJDIR)/*.o $(OBJDIR)/*.d $(TESTDIR)/*.txt
 
-runall:
-	./tsp instances/a280.tsp instances/kroA150.tsp instances/ali535.tsp instances/kroA200.tsp instances/att48.tsp instances/kroB100.tsp instances/att532.tsp instances/kroB150.tsp instances/bayg29.tsp instances/kroB200.tsp instances/bays29.tsp instances/kroC100.tsp instances/berlin52.tsp instances/kroD100.tsp instances/bier127.tsp instances/kroE100.tsp instances/brazil58.tsp instances/lin105.tsp instances/brg180.tsp instances/lin318.tsp instances/burma14.tsp instances/linhp318.tsp instances/ch130.tsp instances/pcb442.tsp instances/ch150.tsp instances/pr107.tsp instances/d198.tsp instances/pr124.tsp instances/d493.tsp instances/pr136.tsp instances/dantzig42.tsp instances/pr144.tsp instances/eil101.tsp instances/pr152.tsp instances/eil51.tsp instances/pr226.tsp instances/eil76.tsp instances/pr264.tsp instances/fl417.tsp instances/pr299.tsp instances/fri26.tsp instances/pr76.tsp instances/gil262.tsp instances/rat195.tsp instances/gr120.tsp instances/rat99.tsp instances/gr137.tsp instances/rd100.tsp instances/gr17.tsp instances/rd400.tsp instances/gr202.tsp instances/si175.tsp instances/gr21.tsp instances/si535.tsp instances/gr229.tsp instances/st70.tsp instances/gr24.tsp instances/swiss42.tsp instances/gr431.tsp instances/ts225.tsp instances/gr48.tsp instances/tsp225.tsp instances/gr96.tsp instances/u159.tsp instances/hk48.tsp instances/ulysses16.tsp instances/kroA100.tsp instances/ulysses22.tsp 
+runall: tsp
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/a280.tsp > $(TESTDIR)/a280.txt; done  	
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroA150.tsp > $(TESTDIR)/kroA150.txt; done  
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/ali535.tsp > $(TESTDIR)/ali535.txt; done  
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroA200.tsp > $(TESTDIR)/kroA200.txt; done  
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/att48.tsp > $(TESTDIR)/att48.txt; done  
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroB100.tsp > $(TESTDIR)/kroB100.txt; done  
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/att532.tsp > $(TESTDIR)/att532.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroB150.tsp > $(TESTDIR)/kroB150.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/bayg29.tsp > $(TESTDIR)/bayg29.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroB200.tsp > $(TESTDIR)/kroB200.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/bays29.tsp > $(TESTDIR)/bays29.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroC100.tsp > $(TESTDIR)/kroC100.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/berlin52.tsp > $(TESTDIR)/berlin52.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroD100.tsp > $(TESTDIR)/kroD100.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/bier127.tsp > $(TESTDIR)/bier127.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroE100.tsp > $(TESTDIR)/kroE100.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/brazil58.tsp > $(TESTDIR)/brazil58.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/lin105.tsp > $(TESTDIR)/lin105.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/brg180.tsp > $(TESTDIR)/brg180.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/lin318.tsp > $(TESTDIR)/lin318.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/burma14.tsp > $(TESTDIR)/burma14.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/linhp318.tsp > $(TESTDIR)/linhp318.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/ch130.tsp > $(TESTDIR)/ch130.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pcb442.tsp > $(TESTDIR)/pcb442.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/ch150.tsp > $(TESTDIR)/ch150.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr107.tsp > $(TESTDIR)/pr107.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/d198.tsp > $(TESTDIR)/d198.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr124.tsp > $(TESTDIR)/pr124.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/d493.tsp > $(TESTDIR)/d493.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr136.tsp > $(TESTDIR)/pr136.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/dantzig42.tsp > $(TESTDIR)/dantzig42.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr144.tsp > $(TESTDIR)/pr144.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/eil101.tsp > $(TESTDIR)/eil101.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr152.tsp > $(TESTDIR)/pr152.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/eil51.tsp > $(TESTDIR)/eil51.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr226.tsp > $(TESTDIR)/pr226.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/eil76.tsp > $(TESTDIR)/eil76.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr264.tsp > $(TESTDIR)/pr264.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/fl417.tsp > $(TESTDIR)/fl417.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr299.tsp > $(TESTDIR)/pr299.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/fri26.tsp > $(TESTDIR)/fri26.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/pr76.tsp > $(TESTDIR)/pr76.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gil262.tsp > $(TESTDIR)/gil262.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/rat195.tsp > $(TESTDIR)/rat195.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr120.tsp > $(TESTDIR)/gr120.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/rat99.tsp > $(TESTDIR)/rat99.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr137.tsp > $(TESTDIR)/gr137.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/rd100.tsp > $(TESTDIR)/rd100.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr17.tsp > $(TESTDIR)/gr17.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/rd400.tsp > $(TESTDIR)/rd400.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr202.tsp > $(TESTDIR)/gr202.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/si175.tsp > $(TESTDIR)/si175.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr21.tsp > $(TESTDIR)/gr21.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/si535.tsp > $(TESTDIR)/si535.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr229.tsp > $(TESTDIR)/gr229.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/st70.tsp > $(TESTDIR)/st70.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr24.tsp > $(TESTDIR)/gr24.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/swiss42.tsp > $(TESTDIR)/swiss42.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr431.tsp > $(TESTDIR)/gr431.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/ts225.tsp > $(TESTDIR)/ts225.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr48.tsp > $(TESTDIR)/gr48.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/tsp225.tsp > $(TESTDIR)/tsp225.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/gr96.tsp > $(TESTDIR)/gr96.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/u159.tsp > $(TESTDIR)/u159.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/hk48.tsp > $(TESTDIR)/hk48.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/ulysses16.tsp > $(TESTDIR)/ulysses16.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/kroA100.tsp > $(TESTDIR)/kroA100.txt; done 
+	for i in {1..$(FREQUENCY)}; do ./tsp instances/ulysses22.tsp > $(TESTDIR)/ulysses22.txt; done 
 
 
 rebuild: clean tsp
