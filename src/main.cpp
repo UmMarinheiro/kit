@@ -12,7 +12,6 @@ using namespace std;
 #include "data.h"
 #include "hungarian.h"
 
-
 #define MODE HUNGARIAN_MODE_MINIMIZE_COST
 enum searchType {DFS, BFS, LOWEST};
 searchType searchMethod = DFS;
@@ -172,7 +171,7 @@ _List_iterator<Node> BFSFunction(list<Node> &tree) {return tree.begin();}
 
 Solution BranchNBoundList()
 {
-	Solution best = {{}, numeric_limits<double>::infinity()}; // TODO Testar com construcao
+	Solution best = {{}, numeric_limits<double>::infinity()};
 	double &upper_bound = best.cost; 
 
 	Node root; 
