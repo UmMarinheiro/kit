@@ -1,5 +1,6 @@
 #include "lagrangian-relaxation.h"
 #include "common.h"
+#include "defines.h"
 
 // Inclui todos os nós menos o [0][0]
 // e  adiciona o custo dos penalizadores
