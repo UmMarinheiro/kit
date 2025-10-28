@@ -8,7 +8,7 @@ CPPC = g++
 #### opcoes de compilacao e includes
 CCOPT = $(BITS_OPTION) -O3 -fPIC -fexceptions -DNDEBUG -DIL_STD -std=c++0x
 CONCERTINCDIR = $(CONCERTDIR)/include
-CCFLAGS = $(CCOPT)
+CCFLAGS = $(CCOPT) 
 #############################
 
 #### flags do linker

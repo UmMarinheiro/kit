@@ -1,9 +1,11 @@
 #include "data.h"
+#include "common.h"
+#include <vector>
 
 Data * dt;
 int n;
 
-double getMatrixCost(int i, int j)
+double getMatrixCost(int i, int j) 
 {
     // static double distCost[5][5] =
     // {
@@ -28,4 +30,19 @@ void initializeData(char* file)
 }
 void freeData() {delete dt;}
 
+void Solution::print() const
+{
+    for(int i = 0; i < sequence.size() - 1; i++)
+        cout << sequence.at(i) << " -> ";
+    cout << sequence.back() << std::endl;
 
+    cout << "Cost: " << cost << std::endl;
+}
+void Solution::print(string name) const {cout<<name<<"="<<endl; print(); }
+
+void updateCost(Solution &toUpdate)
+{
+    toUpdate.cost = 0;
+    for(int i = 0; i < toUpdate.sequence.size()-1; i++) 
+        toUpdate.cost += dt->getDistance(toUpdate.sequence[i], toUpdate.sequence[i+1]);
+}

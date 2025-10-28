@@ -4,6 +4,7 @@
 #include <vector>
 #include "lagrangian-relaxation.h"
 #include "common.h"
+#include "grasp.h"
 
 using namespace std;
 
@@ -17,7 +18,12 @@ int main(int argc, char** argv)
     vector<double> c = packCostsForLagrangean();
     vector<vector<double>> a = getA();
     vector<double> b(n, 2);
-    auto dd = SolveLagrangianDual(148, c, a, b);
+    
+    Solution s = Construct();
+
+    cout<<"UB: "<< s.cost<<endl; 
+
+    auto dd = SolveLagrangianDual(s.cost, c, a, b);
     cout<<endl;
     for(int i = 0; i < n; i++) cout<<dd[i]<<" ";
     cout<<std::endl;

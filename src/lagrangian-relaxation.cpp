@@ -20,9 +20,9 @@ vector<vector<double>> packCostsForKruskal(const vector<double>& lambda)
 // Transforma a matrix de custos n x n em um vetor n2 x 1
 vector<double> packCostsForLagrangean()
 {
-    vector<double> c(n*n);
+    vector<double> c(n*n, 0);
     for(int i = 0; i < n; i++)
-        for(int j = 0; j < n; j++)
+        for(int j = i+1; j < n; j++)
         {
             c[i*n + j] = getMatrixCost(i, j);
         }
@@ -33,7 +33,7 @@ vector<double> getOptimal(const vector<double>& lambda)
 {
     vector<vector<double>> costs = packCostsForKruskal(lambda);
     Kruskal kruskal(costs);
-    kruskal.MST(n-1);
+    cout<<"Kruskal "<<kruskal.MST(n-1);
     
     vector<double> x(n*n, 0);
     auto edges = kruskal.getEdges();
@@ -69,6 +69,8 @@ vector<double> getOptimal(const vector<double>& lambda)
     x[node1*n] = 1;
     x[0*n + node2] = 1;
     x[node2*n + 0] = 1;
+
+    cout<<" + "<<lowestDistToZero + secondLowestDistToZero<<endl;
 
     return x;
 }
@@ -108,6 +110,11 @@ vector<double> SolveLagrangianDual(double UB, const vector<double>& c, const vec
         double u = e*(UB - w)/dot(b_Ax, b_Ax);
         
         lambda = add(lambda,  multiply(u, b_Ax));
+
+        cout<<"Relaxacao: "<<w<<endl;
+        cout<<endl;
+
+        // for(auto i : lambda) cout<<i<<", ";
 
         if(e < EMIN) break;
         if(isLesserOrEqualTo0(b_Ax) && dot(lambda, b_Ax)) break;
