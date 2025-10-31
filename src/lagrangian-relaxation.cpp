@@ -23,7 +23,6 @@ vector<vector<double>> packCostsForKruskal(const vector<double>& lambda, const v
         if(arc.first == 0 || arc.second == 0) continue;
 
         c[arc.first-1][arc.second-1] = INFINITE;
-        c[arc.second-1][arc.first-1] = INFINITE;
     }
     return c;
 }
@@ -76,7 +75,7 @@ vector<double> getOptimal(const vector<double>& lambda, const vector<pair<int,in
         }
     }
     x[0*n + node1] = 1;
-    x[node1*n] = 1;
+    x[node1*n + 0] = 1;
     x[0*n + node2] = 1;
     x[node2*n + 0] = 1;
 
@@ -119,11 +118,6 @@ vector<double> SolveLagrangianDual(double UB, const vector<double>& c, const vec
         double u = e*(UB - w)/dot(b_Ax, b_Ax);
         
         lambda = add(lambda, multiply(u, b_Ax));
-
-        cout<<"Relaxacao: "<<w<<endl;
-        cout<<endl;
-
-        for(auto i : lambda) cout<<i<<", ";
 
         if(e < EMIN) break;
         if(isLesserOrEqualTo0(b_Ax) && dot(lambda, b_Ax)) break;
