@@ -37,12 +37,18 @@ vector<double> packCostsForLagrangean()
         }
     return c;
 }
-
+bool isForbiden(pair<int,int> arc, vector<pair<int, int>> fa)
+{
+    for(auto &current : fa)
+        if(current.first == arc.first && current.second == arc.second) return true;
+    return false;
+}
 vector<double> getOptimal(const vector<double>& lambda, const vector<pair<int,int>>& forbidden_arcs, double* vObj)
 {
     vector<vector<double>> costs = packCostsForKruskal(lambda, forbidden_arcs);
     Kruskal kruskal(costs);
-    *vObj = kruskal.MST(n-1);
+    if(vObj != nullptr) *vObj = kruskal.MST(n-1);
+    else kruskal.MST(n-1);
     
     vector<double> x(n*n, 0);
     auto edges = kruskal.getEdges();
@@ -60,6 +66,8 @@ vector<double> getOptimal(const vector<double>& lambda, const vector<pair<int,in
 
     for(int i = 1; i < n; i++) 
     {
+        if(isForbiden({0,i}, forbidden_arcs)) continue;
+
         double currentCost = getMatrixCost(0, i) - lambda[0] - lambda[i];
         if(currentCost < lowestDistToZero) 
         {
@@ -78,6 +86,8 @@ vector<double> getOptimal(const vector<double>& lambda, const vector<pair<int,in
     x[node1*n + 0] = 1;
     x[0*n + node2] = 1;
     x[node2*n + 0] = 1;
+
+    if(vObj != nullptr) *vObj += lowestDistToZero + secondLowestDistToZero;
 
     return x;
 }

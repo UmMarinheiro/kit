@@ -1,11 +1,12 @@
 #include "common.h"
 #include "grasp.h"
 #include "lagrangian-relaxation.h"
+#include <cstdio>
 #include <list>
 
 typedef struct Node
 {
-  double cost;
+  double cost = 0;
   vector<double> sol;
   vector<double> lambda;
   
@@ -15,7 +16,11 @@ typedef struct Node
   {
     this->forbidden_arcs = fa;
     lambda = SolveLagrangianDual(UB, c, a, b, fa);
-    sol = getOptimal(lambda, fa, &cost);
+    sol = getOptimal(lambda, fa);
+
+    for(int i = 0; i < n; i++)
+      for(int j = i+1; j < n; j++)
+        cost += sol[i*n+j]*getMatrixCost(i, j);
   }
 }node;
 
@@ -34,15 +39,15 @@ Solution bnb()
     auto itt = nodes.begin();
     node &current = *itt;
 
+    cout<<"ub: "<< ub << " ccost: " << current.cost << endl;
+    for(auto &i : current.forbidden_arcs) cout<<"[" << i.first << ", " << i.second << "], ";
+    cout<<endl;
+
     if(current.cost > ub)
     {
       nodes.erase(itt);
       continue;
     }
-
-    cout << "UB: " << ub << "   " << current.cost << endl;
-    for(auto arc : current.forbidden_arcs) cout << "[" << arc.first << ", " << arc.second << "], "; 
-    cout<<endl;
 
     int bestIndex = 0;
     int bestDegree = 0;
@@ -50,7 +55,7 @@ Solution bnb()
     for(int i = 0; i < n; i++)
     {
       int degree = 0;
-      for(int j = 0; j < n; j++) degree += current.sol[i*5 + j];
+      for(int j = 0; j < n; j++) degree += current.sol[i*n + j];
       if(degree > bestDegree)
       {
         bestIndex = i;
@@ -65,19 +70,10 @@ Solution bnb()
     }
     else
     {
+      for(int i = 0; i < n; i++)
+      {
+        if(current.sol[bestIndex*n + i] == 0) continue;
 
-      for(int i = 0; i < n; i++)
-      {
-        for(int j = 0; j < n; j++)
-        {
-          cout<<current.sol[5*i + j]<<", ";
-        }
-        cout<<endl;
-      }
-      cout<<"BestDegree " << bestDegree << " Index " << bestIndex << endl;
-      for(int i = 0; i < n; i++)
-      {
-        if(current.sol[bestIndex*5 + i] == 0)continue;
         vector<pair<int, int>> forbidden = current.forbidden_arcs;
 
         forbidden.push_back({bestIndex, i});
@@ -90,23 +86,15 @@ Solution bnb()
     nodes.erase(itt);
   }
 
-  for(int i = 0; i < n; i++)
-  {
-    for(int j = 0; j < n; j++)
-    {
-      cout<<bestSol[5*i + j]<<", ";
-    }
-    cout<<endl;
-  }
   vector<int> sequence = {0};
   while(sequence.size() != n+1)
   {
     for(int i = 0; i < n; i++)
     {
-      if(bestSol[sequence.back()*5 + i] == 1)
+      if(bestSol[sequence.back()*n + i] == 1)
       {
-        bestSol[sequence.back()*5 + i] = 0;
-        bestSol[i*5 + sequence.back()] = 0;
+        bestSol[sequence.back()*n + i] = 0;
+        bestSol[i*n + sequence.back()] = 0;
         sequence.push_back(i);
         break;
       }
