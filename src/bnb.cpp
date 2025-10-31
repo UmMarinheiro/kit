@@ -2,27 +2,19 @@
 #include "grasp.h"
 #include "lagrangian-relaxation.h"
 #include <cstdio>
-#include <list>
+#include "bnb.h"
 
-typedef struct Node
+BranchingMethod<Node> *treePtr; 
+
+Node::Node(double UB, const vector<double>& c, const vector<vector<double>>& a, const vector<double>& b, const vector<pair<int,int>>& fa)
 {
-  double cost = 0;
-  vector<double> sol;
-  vector<double> lambda;
-  
-  vector<pair<int, int>> forbidden_arcs;
-
-  Node(double UB, const vector<double> &c, const vector<vector<double>> &a, const vector<double> &b, const vector<pair<int, int>> &fa)
-  {
-    this->forbidden_arcs = fa;
-    lambda = SolveLagrangianDual(UB, c, a, b, fa);
-    sol = getOptimal(lambda, fa);
-
-    for(int i = 0; i < n; i++)
-      for(int j = i+1; j < n; j++)
-        cost += sol[i*n+j]*getMatrixCost(i, j);
-  }
-}node;
+  forbidden_arcs = fa;
+  lambda = SolveLagrangianDual(UB, c, a, b, forbidden_arcs);
+  sol = getOptimal(lambda, forbidden_arcs);
+  for(int i = 0; i < n; i++)
+    for(int j = i+1; j < n; j++)
+      cost += sol[i*n + j]*getMatrixCost(i, j);
+}
 
 Solution bnb()
 {
@@ -33,21 +25,18 @@ Solution bnb()
   const vector<vector<double>> a = getA();
   const vector<double> b(n, 2);
 
-  list<Node> nodes = {Node(ub, c, a, b, {})};
-  while(!nodes.empty())
+  if(treePtr == nullptr)
   {
-    auto itt = nodes.begin();
-    node &current = *itt;
+    std::cout << "Branching method not defined!" << endl;
+    throw; 
+  }
 
-    cout<<"ub: "<< ub << " ccost: " << current.cost << endl;
-    for(auto &i : current.forbidden_arcs) cout<<"[" << i.first << ", " << i.second << "], ";
-    cout<<endl;
+  treePtr->push(Node(ub, c, a, b, {}));
+  while(!treePtr->empty())
+  {
+    Node current = treePtr->pull();
 
-    if(current.cost > ub)
-    {
-      nodes.erase(itt);
-      continue;
-    }
+    if(current.cost > ub) continue;
 
     int bestIndex = 0;
     int bestDegree = 0;
@@ -79,11 +68,9 @@ Solution bnb()
         forbidden.push_back({bestIndex, i});
         forbidden.push_back({i, bestIndex});
 
-        nodes.push_back(Node(ub, c, a, b, forbidden));
+        treePtr->push(Node(ub, c, a, b, forbidden));
       }
     }
-    
-    nodes.erase(itt);
   }
 
   vector<int> sequence = {0};
@@ -91,13 +78,12 @@ Solution bnb()
   {
     for(int i = 0; i < n; i++)
     {
-      if(bestSol[sequence.back()*n + i] == 1)
-      {
-        bestSol[sequence.back()*n + i] = 0;
-        bestSol[i*n + sequence.back()] = 0;
-        sequence.push_back(i);
-        break;
-      }
+      if(bestSol[sequence.back()*n + i] == 0) continue;
+      
+      bestSol[sequence.back()*n + i] = 0;
+      bestSol[i*n + sequence.back()] = 0;
+      sequence.push_back(i);
+      break;
     }
   }
 
