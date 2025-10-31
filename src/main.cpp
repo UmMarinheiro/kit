@@ -18,12 +18,18 @@ int main(int argc, char** argv)
     vector<double> c = packCostsForLagrangean();
     vector<vector<double>> a = getA();
     vector<double> b(n, 2);
+    vector<pair<int, int>> forbidden_arcs = {};
+    double vObj;
     
     Solution s = Construct();
 
     cout<<"UB: "<< s.cost<<endl; 
 
-    auto dd = SolveLagrangianDual(s.cost, c, a, b);
+    auto dd = SolveLagrangianDual(s.cost, c, a, b, forbidden_arcs);
+    getOptimal(dd, forbidden_arcs, &vObj);
+
+    cout<<endl<<endl;
+    cout<<"vObj: " << vObj<<endl;
     cout<<endl;
     for(int i = 0; i < n; i++) cout<<dd[i]<<" ";
     cout<<std::endl;

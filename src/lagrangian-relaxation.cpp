@@ -2,9 +2,11 @@
 #include "common.h"
 #include "defines.h"
 
+#define INFINITE 9999999
+
 // Inclui todos os nós menos o [0][0]
 // e  adiciona o custo dos penalizadores
-vector<vector<double>> packCostsForKruskal(const vector<double>& lambda)
+vector<vector<double>> packCostsForKruskal(const vector<double>& lambda, const vector<pair<int,int>>& forbidden_arcs)
 {
     vector<vector<double>> c(n-1, vector<double>(n-1));
     for(int i = 0; i < n-1; i++)
@@ -15,6 +17,13 @@ vector<vector<double>> packCostsForKruskal(const vector<double>& lambda)
             else c[i][j] = getMatrixCost(j+1, i+1);
             c[i][j] -= lambda[i+1] + lambda[j+1];
         }
+    }
+    for(const auto &arc : forbidden_arcs)
+    {
+        if(arc.first == 0 || arc.second == 0) continue;
+
+        c[arc.first-1][arc.second-1] = INFINITE;
+        c[arc.second-1][arc.first-1] = INFINITE;
     }
     return c;
 }
@@ -30,11 +39,11 @@ vector<double> packCostsForLagrangean()
     return c;
 }
 
-vector<double> getOptimal(const vector<double>& lambda)
+vector<double> getOptimal(const vector<double>& lambda, const vector<pair<int,int>>& forbidden_arcs, double* vObj)
 {
-    vector<vector<double>> costs = packCostsForKruskal(lambda);
+    vector<vector<double>> costs = packCostsForKruskal(lambda, forbidden_arcs);
     Kruskal kruskal(costs);
-    cout<<"Kruskal "<<kruskal.MST(n-1);
+    *vObj = kruskal.MST(n-1);
     
     vector<double> x(n*n, 0);
     auto edges = kruskal.getEdges();
@@ -71,12 +80,11 @@ vector<double> getOptimal(const vector<double>& lambda)
     x[0*n + node2] = 1;
     x[node2*n + 0] = 1;
 
-    cout<<" + "<<lowestDistToZero + secondLowestDistToZero<<endl;
-
     return x;
 }
 
-vector<double> SolveLagrangianDual(double UB, const vector<double>& c, const vector<vector<double>>& a, const vector<double>& b)
+vector<double> SolveLagrangianDual(double UB, const vector<double>& c, const vector<vector<double>>& a, const vector<double>& b,
+    const vector<pair<int, int>>& forbidden_arcs)
 {
     vector<double> bestlambda(n, 0);
     vector<double> lambda(n, 0);
@@ -88,10 +96,10 @@ vector<double> SolveLagrangianDual(double UB, const vector<double>& c, const vec
 
     while(true)
     {
-        vector<double> x = getOptimal(lambda);
+        double w;
+
+        vector<double> x = getOptimal(lambda, forbidden_arcs, &w);
         vector<double> b_Ax = subtr(b, apply(a, x));
-        
-        double w = dot(c, x) + dot(lambda, b_Ax);
         
         if(w > bestw)
         {
@@ -110,12 +118,12 @@ vector<double> SolveLagrangianDual(double UB, const vector<double>& c, const vec
         }
         double u = e*(UB - w)/dot(b_Ax, b_Ax);
         
-        lambda = add(lambda,  multiply(u, b_Ax));
+        lambda = add(lambda, multiply(u, b_Ax));
 
         cout<<"Relaxacao: "<<w<<endl;
         cout<<endl;
 
-        // for(auto i : lambda) cout<<i<<", ";
+        for(auto i : lambda) cout<<i<<", ";
 
         if(e < EMIN) break;
         if(isLesserOrEqualTo0(b_Ax) && dot(lambda, b_Ax)) break;
