@@ -77,7 +77,7 @@ typedef struct Node
   std::vector<std::pair<int, int>> forbidden_arcs;
 
   bool operator<(Node other) const{return cost > other.cost;}
-  Node(double UB, const std::vector<double> &c, const std::vector<std::vector<double>> &a, const std::vector<double> &b, const std::vector<std::pair<int, int>> &fa);
+  Node(double UB, const std::vector<double> &c, const std::vector<std::vector<double>> &a, const std::vector<double> &b, const std::vector<std::pair<int, int>> &fa, const std::vector<double>& startingLambda);
 }Node;
 
 extern BranchingMethod<Node>* treePtr;

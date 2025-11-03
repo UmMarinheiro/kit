@@ -93,10 +93,9 @@ vector<double> getOptimal(const vector<double>& lambda, const vector<pair<int,in
 }
 
 vector<double> SolveLagrangianDual(double UB, const vector<double>& c, const vector<vector<double>>& a, const vector<double>& b,
-    const vector<pair<int, int>>& forbidden_arcs)
+    const vector<pair<int, int>>& forbidden_arcs, vector<double> lambda)
 {
     vector<double> bestlambda(n, 0);
-    vector<double> lambda(n, 0);
     
     double bestw = numeric_limits<double>().lowest();
     

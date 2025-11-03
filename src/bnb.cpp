@@ -2,18 +2,17 @@
 #include "grasp.h"
 #include "lagrangian-relaxation.h"
 #include <cstdio>
+#include <vector>
 #include "bnb.h"
 
 BranchingMethod<Node> *treePtr; 
 
-Node::Node(double UB, const vector<double>& c, const vector<vector<double>>& a, const vector<double>& b, const vector<pair<int,int>>& fa)
+Node::Node(double UB, const vector<double>& c, const vector<vector<double>>& a, const vector<double>& b,
+           const vector<pair<int,int>>& fa, const vector<double>& startingLambda)
 {
   forbidden_arcs = fa;
-  lambda = SolveLagrangianDual(UB, c, a, b, forbidden_arcs);
-  sol = getOptimal(lambda, forbidden_arcs);
-  for(int i = 0; i < n; i++)
-    for(int j = i+1; j < n; j++)
-      cost += sol[i*n + j]*getMatrixCost(i, j);
+  lambda = SolveLagrangianDual(UB, c, a, b, forbidden_arcs, startingLambda);
+  sol = getOptimal(lambda, forbidden_arcs, &cost);
 }
 
 Solution bnb()
@@ -31,15 +30,19 @@ Solution bnb()
     throw; 
   }
 
-  treePtr->push(Node(ub, c, a, b, {}));
+  treePtr->push(Node(ub, c, a, b, {}, vector<double>(n, 0)));
   while(!treePtr->empty())
   {
     Node current = treePtr->pull();
 
-    if(current.cost > ub) continue;
+    cout << "Depth:" << current.forbidden_arcs.size()/2 << endl
+      << "Cost: " << current.cost << "/" << ub << endl; 
+
+    if(current.cost > ub - 1e-5) continue;
 
     int bestIndex = 0;
     int bestDegree = 0;
+    bool feasible = true;
 
     for(int i = 0; i < n; i++)
     {
@@ -50,9 +53,10 @@ Solution bnb()
         bestIndex = i;
         bestDegree = degree;
       }
+      if(degree != 2) feasible = false;
     }
 
-    if(bestDegree == 2)
+    if(feasible)
     {
       ub = current.cost;
       bestSol = current.sol;
@@ -68,7 +72,7 @@ Solution bnb()
         forbidden.push_back({bestIndex, i});
         forbidden.push_back({i, bestIndex});
 
-        treePtr->push(Node(ub, c, a, b, forbidden));
+        treePtr->push(Node(ub, c, a, b, forbidden, current.lambda));
       }
     }
   }
